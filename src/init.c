@@ -7,12 +7,22 @@
 #include <axiom_lmm.h>
 #include <axiom_err.h>
 
+#ifdef FIXED_REGIONS
+#include <freelist.h>
+#endif
+
 static void axiom_lmm_free_in_region(struct axiom_lmm_region *reg,
 				     void *block, size_t size);
 
 void axiom_lmm_init(axiom_lmm_t *lmm)
 {
 	lmm->regions = NULL;
+
+#ifdef FIXED_REGIONS
+	lmm->fl = freelist_init_from_buffer(lmm->region_idx,
+					    sizeof(lmm->region_idx));
+	assert(lmm->fl != NULL);
+#endif
 }
 
 static inline void dump_region(struct axiom_lmm_region *r)
@@ -23,7 +33,90 @@ static inline void dump_region(struct axiom_lmm_region *r)
 		r->free, (r->end - r->start), r->nodes);
 }
 
-int axiom_lmm_add_region(axiom_lmm_t *lmm, axiom_lmm_region_t *region,
+#define container_of(ptr, type, member) ({                      \
+	const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
+	(type *)( (char *)__mptr - offsetof(type,member) );})
+
+static int axiom_lmm_merge_region(axiom_lmm_t *lmm,
+				  axiom_lmm_region_t *tokeep,
+				  axiom_lmm_region_t *tomerge)
+{
+	fprintf(stderr, "Comparing K:%p M:%p\n", tokeep, tomerge);
+	fprintf(stderr, "K:%p s:0x%"PRIxPTR" - e:0x%"PRIxPTR"\n",
+		tokeep, tokeep->start, tokeep->end);
+	fprintf(stderr, "M:%p s:0x%"PRIxPTR" - e:0x%"PRIxPTR"\n",
+		tomerge, tomerge->start, tomerge->end);
+
+	if (tokeep->flags != tomerge->flags) {
+		fprintf(stderr, "Different flags\n");
+		return -1;
+	}
+
+	if (tokeep->prio != tomerge->prio) {
+		fprintf(stderr, "Different priorities\n");
+		return -1;
+	}
+
+	if (tokeep->end == tomerge->start) {
+		struct axiom_lmm_node *n;
+
+		fprintf(stderr, "Can be merged\n");
+		tokeep->end = tomerge->end;
+		tokeep->free += tomerge->free;
+		tokeep->next = tomerge->next;
+
+		for (n = tokeep->nodes; n->next != NULL; n = n->next) ;
+		assert(n != NULL);
+#if 1
+		if ((uintptr_t)n + n->size == (uintptr_t)tomerge->nodes) {
+			int idx;
+
+			/* last free zone of tokeep is contiguous with the
+			 * first free zone of tomerge. */
+			n->size += tomerge->nodes->size;
+			n->next = tomerge->nodes->next;
+			fprintf(stderr, "Merged NODES (%zu)\n", tomerge->nodes->size);
+fprintf(stderr, "T:%p B:%p\n", tomerge, &(lmm->region_pool[0]));
+			idx = ((uintptr_t)tomerge -
+			       (uintptr_t)&(lmm->region_pool[0]))
+			      / sizeof(*tomerge);
+			freelist_free_idx(lmm->fl, idx);
+
+		} else {
+			n->next = tomerge->nodes;
+			fprintf(stderr, "NO Merged NODES\n");
+		}
+#else
+		n->next = tomerge->nodes;
+#endif
+		fprintf(stderr, "n=%p n->next=%p n+size=%"PRIxPTR"\n", n, n->next,
+			(uintptr_t)n + n->size);
+		fprintf(stderr, "tomerge->nodes=%p\n", tomerge->nodes);
+
+	} else {
+		fprintf(stderr, "NO merge\n");
+	}
+
+	return 0;
+}
+
+#ifdef FIXED_REGIONS
+int axiom_lmm_add_reg(axiom_lmm_t *lmm, void *addr, size_t size,
+		      axiom_lmm_flags_t flags, axiom_lmm_pri_t prio)
+{
+	axiom_lmm_region_t *region;
+	int idx = freelist_alloc_idx(lmm->fl);
+
+	if (idx == FREELIST_INVALID_IDX)
+		return AXIOM_LMM_INVALID_MEM_DESC;
+
+	region = &(lmm->region_pool[idx]);
+
+	return axiom_lmm_add_region(lmm, region, addr, size, flags, prio);
+}
+#endif
+
+int axiom_lmm_add_region_ORIG(axiom_lmm_t *lmm, axiom_lmm_region_t *region,
 			 void *addr, size_t size, axiom_lmm_flags_t flags,
 			 axiom_lmm_pri_t prio)
 {
@@ -72,6 +165,29 @@ int axiom_lmm_add_region(axiom_lmm_t *lmm, axiom_lmm_region_t *region,
 	axiom_lmm_free_in_region(region, (void *)region->start,
 				 region->end - region->start);
 #endif
+
+	fprintf(stderr, "+++++++++++++++++++++++++\n");
+	fprintf(stderr, "Region %p\n", region);
+	if (rp == &(lmm->regions)) {
+		fprintf(stderr, "Added on TOP\n");
+	} else {
+		struct axiom_lmm_region *reg;
+
+		reg = container_of(rp, struct axiom_lmm_region, next);
+		fprintf(stderr, "Added after %p %p\n", rp, reg);
+		axiom_lmm_merge_region(lmm, reg, region);
+	}
+	if (region->next == NULL) {
+		fprintf(stderr, "Added as LAST element\n");
+	} else {
+		struct axiom_lmm_region *reg = region->next;
+		fprintf(stderr, "Added before %p\n", reg);
+		axiom_lmm_merge_region(lmm, region, reg);
+	}
+	fprintf(stderr, "+++++++++++++++++++++++++\n");
+
+	fprintf(stderr, "Added prio:%d min:0x%"PRIxPTR" max:0x%"PRIxPTR"\n",
+		region->prio, region->start, region->end);
 
 	return AXIOM_LMM_OK;
 }
@@ -524,6 +640,9 @@ void *axiom_lmm_alloc_aligned(axiom_lmm_t *lmm, size_t size,
 				   (uintptr_t)0, (size_t)-1);
 }
 
+
+
+
 #ifdef REMOVED_API
 /* REMOVED API */
 int axiom_lmm_add_free(axiom_lmm_t *lmm, void *block, size_t size)
@@ -583,3 +702,79 @@ int axiom_lmm_add_free(axiom_lmm_t *lmm, void *block, size_t size)
 	return AXIOM_LMM_OK;
 }
 #endif
+
+int axiom_lmm_add_region(axiom_lmm_t *lmm, axiom_lmm_region_t *region,
+			  void *addr, size_t size, axiom_lmm_flags_t flags,
+			  axiom_lmm_pri_t prio)
+{
+	uintptr_t min = (uintptr_t)addr;
+	uintptr_t max = min + size;
+	struct axiom_lmm_region **rp, *r;
+
+	min = (min + AXIOM_LMM_ALIGN_MASK) & ~AXIOM_LMM_ALIGN_MASK;
+	max &= ~AXIOM_LMM_ALIGN_MASK;
+
+	if (max <= min) {
+		fprintf(stderr, "invalid region 0x%"PRIxPTR" 0x%"PRIxPTR"\n",
+			min, max);
+		return AXIOM_LMM_INVALID_REGION;
+	}
+
+	region->nodes = NULL;
+	region->start = min;
+	region->end = max;
+	region->flags = flags;
+	region->prio = prio;
+	region->free = 0;
+
+	rp = &(lmm->regions);
+
+	if (*rp == region) {
+		fprintf(stderr, "region already in the pool\n");
+		return AXIOM_LMM_OK;
+	}
+
+	for (r = lmm->regions;
+	     r && ((r->prio > prio)
+		   || ((r->prio == prio)
+			&& (r->start < min)));
+	     rp = &(r->next), r = r->next) {
+		if (r == region) {
+			fprintf(stderr, "region already in the pool\n");
+			return AXIOM_LMM_OK;
+		}
+		/* assert((max <= r->start) || (min >= r->end)); */
+	}
+	region->next = r;
+	*rp = region;
+
+#ifndef REMOVED_API
+	axiom_lmm_free_in_region(region, (void *)region->start,
+				 region->end - region->start);
+#endif
+
+	fprintf(stderr, "+++++++++++++++++++++++++\n");
+	fprintf(stderr, "Region %p\n", region);
+	if (rp == &(lmm->regions)) {
+		fprintf(stderr, "Added on TOP\n");
+	} else {
+		struct axiom_lmm_region *reg;
+
+		reg = container_of(rp, struct axiom_lmm_region, next);
+		fprintf(stderr, "Added after %p %p\n", rp, reg);
+		axiom_lmm_merge_region(lmm, reg, region);
+	}
+	if (region->next == NULL) {
+		fprintf(stderr, "Added as LAST element\n");
+	} else {
+		struct axiom_lmm_region *reg = region->next;
+		fprintf(stderr, "Added before %p\n", reg);
+		axiom_lmm_merge_region(lmm, region, reg);
+	}
+	fprintf(stderr, "+++++++++++++++++++++++++\n");
+
+	fprintf(stderr, "Added prio:%d min:0x%"PRIxPTR" max:0x%"PRIxPTR"\n",
+		region->prio, region->start, region->end);
+
+	return AXIOM_LMM_OK;
+}

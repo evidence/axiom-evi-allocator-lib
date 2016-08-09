@@ -1,9 +1,13 @@
 AM_CPPFLAGS = -I$(top_srcdir)/src/
 
-bin_PROGRAMS = testA testFreelist
+bin_PROGRAMS = testA testB testFreelist
 
 testA_SOURCES = testA.c
 testA_LDADD = $(top_srcdir)/src/libaxiom_lmm.la
+
+
+testB_SOURCES = testB.c
+testB_LDADD = $(top_srcdir)/src/libaxiom_lmm.la
 
 testFreelist_SOURCES = testFreelist.c
 testFreelist_LDADD = $(top_srcdir)/src/libaxiom_lmm.la
