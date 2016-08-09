@@ -33,6 +33,7 @@ AC_TYPE_SIZE_T
 AC_TYPE_UINT32_T
 
 # Checks for library functions.
+AC_FUNC_MALLOC
 
 AC_CONFIG_FILES([Makefile src/Makefile test/Makefile])
 AC_OUTPUT
