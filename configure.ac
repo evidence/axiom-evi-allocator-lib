@@ -8,12 +8,10 @@ AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
 AC_CONFIG_HEADERS([config.h])
 
-AC_ENABLE_SHARED
-AC_ENABLE_STATIC
 
 AM_PROG_AR
 
-AC_PROG_LIBTOOL
+LT_INIT([disable-static])
 
 AC_CONFIG_MACRO_DIR([m4])
 
