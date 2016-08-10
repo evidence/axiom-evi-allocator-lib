@@ -23,6 +23,21 @@ AC_PROG_CXX
 AC_PROG_INSTALL
 AC_PROG_LN_S
 
+
+######################################################################
+# DOXYGEN SUPPORT
+######################################################################
+DX_HTML_FEATURE(ON)
+DX_CHM_FEATURE(OFF)
+DX_CHI_FEATURE(OFF)
+DX_MAN_FEATURE(OFF)
+DX_RTF_FEATURE(OFF)
+DX_XML_FEATURE(OFF)
+DX_PDF_FEATURE(OFF)
+DX_PS_FEATURE(OFF)
+
+DX_INIT_DOXYGEN([$PACKAGE_NAME],[docs/doxygen.cfg],[docs/output])
+
 # Checks for libraries.
 
 # Checks for header files.
@@ -35,5 +50,5 @@ AC_TYPE_UINT32_T
 # Checks for library functions.
 AC_FUNC_MALLOC
 
-AC_CONFIG_FILES([Makefile src/Makefile test/Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile test/Makefile docs/doxygen.cfg])
 AC_OUTPUT
