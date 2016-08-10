@@ -5,6 +5,9 @@
 
 #include <freelist.h>
 
+#define DEBUG
+#include <debug.h>
+
 int freelist_init(freelist_t *fl, int *idx_vec, int n_elem)
 {
 	int i;
@@ -34,8 +37,8 @@ freelist_t *freelist_init_from_buffer(void *buf, size_t buf_size)
 	int n_elem;
 
 	if (buf_size < sizeof(*res) + sizeof(*res->idx_vec)) {
-		fprintf(stderr, "Not enough room for freelist "
-			"(freelist_t=%zu)\n", sizeof(*res));
+		DBG("Not enough room for freelist "
+		    "(freelist_t=%zu)\n", sizeof(*res));
 		return NULL;
 	}
 
@@ -44,9 +47,11 @@ freelist_t *freelist_init_from_buffer(void *buf, size_t buf_size)
 	n_elem = (int)((uintptr_t)buf + buf_size - (uintptr_t)idx_vec)
 		      / sizeof(*res->idx_vec);
 
-	fprintf(stderr, "buf=%p s:%zu (n_elem=%d, estimate=%zu, wasted=%zu) \n", buf,
-		buf_size, n_elem, FREELIST_SPACE(n_elem), buf_size - FREELIST_SPACE(n_elem));
-	fprintf(stderr, "res=%p idx_vec[%d] -> %p\n", res, n_elem, idx_vec);
+	DBG("buf=%p s:%zu (n_elem=%d, estimate=%zu, wasted=%zu) \n", buf,
+	    buf_size, n_elem, FREELIST_SPACE(n_elem),
+	    buf_size - FREELIST_SPACE(n_elem));
+	DBG("res=%p idx_vec[%d] -> %p\n", res, n_elem, idx_vec);
+	DBG("sizeof(freelist_t)=%zu\n", sizeof(*res));
 
 	if (freelist_init(res, idx_vec, n_elem) != FREELIST_OK)
 		return NULL;
@@ -69,7 +74,7 @@ int freelist_alloc_idx(freelist_t *fl)
 #else
 	fl->idx_vec[idx] = FREELIST_INVALID_IDX;
 #endif
-	fprintf(stderr, "%s] idx = %d\n", __func__, idx);
+	DBG("idx = %d\n", idx);
 	
 	return idx;
 }
@@ -77,7 +82,7 @@ int freelist_alloc_idx(freelist_t *fl)
 int freelist_free_idx(freelist_t *fl, int idx)
 {
 	if (idx < 0 || idx >= fl->n_elem) {
-		fprintf(stderr, "%s] idx = %d\n", __func__, FREELIST_INVALID_IDX);
+		DBG("idx = %d\n", FREELIST_INVALID_IDX);
 		return FREELIST_INVALID_IDX;
 	}
 
