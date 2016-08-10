@@ -59,9 +59,9 @@ static inline void dump_region(struct axiom_lmm_region *r)
 		r->free, (r->end - r->start), r->nodes);
 }
 
-#define container_of(ptr, type, member) ({                      \
-	const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
-	(type *)( (char *)__mptr - offsetof(type,member) );})
+#define container_of(ptr, type, member) ({                        \
+	const typeof( ((type *)0)->member ) *member_ptr = (ptr);  \
+	(type *)( (char *)member_ptr - offsetof(type,member) );})
 
 static int axiom_lmm_merge_region(axiom_lmm_t *lmm,
 				  axiom_lmm_region_t *tokeep,
