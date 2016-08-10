@@ -32,7 +32,7 @@ static inline int is_mergeable_address(axiom_lmm_t *lmm, axiom_lmm_region_t *r)
 	return !!res;
 }
 
-void axiom_lmm_init(axiom_lmm_t *lmm)
+int axiom_lmm_init(axiom_lmm_t *lmm)
 {
 	int n_elem;
 	axiom_lmm_region_t *region_pool;
@@ -42,13 +42,23 @@ void axiom_lmm_init(axiom_lmm_t *lmm)
 
 	n_elem = freelist_elem_for_memblock(sizeof(lmm->workspace),
 					    sizeof(axiom_lmm_region_t));
+	if (n_elem <= 0) {
+		DBG("No room for region descriptors (%d <= 0!)\n", n_elem);
+		return AXIOM_LMM_INVALID_MEM_DESC;
+	}
 
 	DBG("elem=%d\n", n_elem);
-	freelist_init_from_buffer(lmm->workspace, FREELIST_SPACE(n_elem));
+	fl = freelist_init_from_buffer(lmm->workspace, FREELIST_SPACE(n_elem));
+	if (fl == NULL) {
+		DBG("No room for %d region descriptors\n", n_elem);
+		return AXIOM_LMM_INVALID_MEM_DESC;
+	}
 
 	region_pool = get_region_pool(lmm);
 	fl = get_freelist(lmm);
 	DBG("WS:%p fl:%p rp:%p\n", lmm->workspace, fl, region_pool);
+
+	return AXIOM_LMM_OK;
 }
 
 static inline void dump_region(struct axiom_lmm_region *r)

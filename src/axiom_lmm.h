@@ -39,7 +39,7 @@ typedef struct axiom_lmm {
 #define AXIOM_PRIVATE_MEM         1
 #define AXIOM_SHARE_MEM           2
 
-void axiom_lmm_init(axiom_lmm_t *lmm);
+int axiom_lmm_init(axiom_lmm_t *lmm);
 int axiom_lmm_add_region(axiom_lmm_t *lmm, axiom_lmm_region_t *region,
 			 void *addr, size_t size, axiom_lmm_flags_t flags,
 			 axiom_lmm_pri_t prio);
