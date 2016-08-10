@@ -707,22 +707,22 @@ int axiom_lmm_add_region(axiom_lmm_t *lmm, axiom_lmm_region_t *region,
 			  void *addr, size_t size, axiom_lmm_flags_t flags,
 			  axiom_lmm_pri_t prio)
 {
-	uintptr_t min = (uintptr_t)addr;
-	uintptr_t max = min + size;
+	uintptr_t start = (uintptr_t)addr;
+	uintptr_t end = start + size;
 	struct axiom_lmm_region **rp, *r;
 
-	min = (min + AXIOM_LMM_ALIGN_MASK) & ~AXIOM_LMM_ALIGN_MASK;
-	max &= ~AXIOM_LMM_ALIGN_MASK;
+	start = (start + AXIOM_LMM_ALIGN_MASK) & ~AXIOM_LMM_ALIGN_MASK;
+	end &= ~AXIOM_LMM_ALIGN_MASK;
 
-	if (max <= min) {
+	if (end <= start) {
 		fprintf(stderr, "invalid region 0x%"PRIxPTR" 0x%"PRIxPTR"\n",
-			min, max);
+			start, end);
 		return AXIOM_LMM_INVALID_REGION;
 	}
 
 	region->nodes = NULL;
-	region->start = min;
-	region->end = max;
+	region->start = start;
+	region->end = end;
 	region->flags = flags;
 	region->prio = prio;
 	region->free = 0;
@@ -737,7 +737,7 @@ int axiom_lmm_add_region(axiom_lmm_t *lmm, axiom_lmm_region_t *region,
 	for (r = lmm->regions;
 	     r && ((r->prio > prio)
 		   || ((r->prio == prio)
-			&& (r->start < min)));
+			&& (r->start < start)));
 	     rp = &(r->next), r = r->next) {
 		if (r == region) {
 			fprintf(stderr, "region already in the pool\n");
