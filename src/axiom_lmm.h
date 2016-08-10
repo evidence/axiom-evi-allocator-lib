@@ -4,12 +4,6 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define FIXED_REGIONS
-
-#ifdef FIXED_REGIONS
-#include <freelist.h>
-#endif
-
 typedef uint32_t axiom_lmm_flags_t;
 typedef int      axiom_lmm_pri_t;
 
@@ -35,14 +29,7 @@ typedef struct axiom_lmm_region {
 
 typedef struct axiom_lmm {
 	axiom_lmm_region_t *regions;
-
-#ifdef FIXED_REGIONS
-#define AXIOM_MAX_REGIONS 16
-	axiom_lmm_region_t region_pool[AXIOM_MAX_REGIONS];
-	char region_idx[FREELIST_SPACE(AXIOM_MAX_REGIONS)];
-	freelist_t *fl;
-#endif
-
+	char workspace[4096 - sizeof(axiom_lmm_region_t *)];
 } axiom_lmm_t;
 
 /* TODO: check power of 2???*/
@@ -68,10 +55,8 @@ void *axiom_lmm_alloc_gen(axiom_lmm_t *lmm, size_t size,
 void axiom_lmm_dump_regions(axiom_lmm_t *lmm);
 void axiom_lmm_dump(axiom_lmm_t *lmm);
 
-#ifdef FIXED_REGIONS
 int axiom_lmm_add_reg(axiom_lmm_t *lmm, void *addr, size_t size,
 		      axiom_lmm_flags_t flags, axiom_lmm_pri_t prio);
-#endif
 
 #define REMOVED_API
 #undef REMOVED_API

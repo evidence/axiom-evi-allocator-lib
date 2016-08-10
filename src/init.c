@@ -7,22 +7,44 @@
 #include <axiom_lmm.h>
 #include <axiom_err.h>
 
-#ifdef FIXED_REGIONS
 #include <freelist.h>
-#endif
 
 static void axiom_lmm_free_in_region(struct axiom_lmm_region *reg,
 				     void *block, size_t size);
 
+static inline axiom_lmm_region_t *get_region_pool(axiom_lmm_t *lmm);
+static inline freelist_t *get_freelist(axiom_lmm_t *lmm);
+
+static inline int is_mergeable_address(axiom_lmm_t *lmm, axiom_lmm_region_t *r)
+{
+	int res;
+	freelist_t *fl = get_freelist(lmm);
+	uintptr_t start = (uintptr_t)get_region_pool(lmm);
+	uintptr_t end = start + fl->n_elem * sizeof(axiom_lmm_region_t);
+	uintptr_t ra = (uintptr_t)r;
+
+	res = (start <= ra) && (ra < end);
+
+	return !!res;
+}
+
 void axiom_lmm_init(axiom_lmm_t *lmm)
 {
+	int n_elem;
+	axiom_lmm_region_t *region_pool;
+	freelist_t *fl;
+
 	lmm->regions = NULL;
 
-#ifdef FIXED_REGIONS
-	lmm->fl = freelist_init_from_buffer(lmm->region_idx,
-					    sizeof(lmm->region_idx));
-	assert(lmm->fl != NULL);
-#endif
+	n_elem = freelist_elem_for_memblock(sizeof(lmm->workspace),
+					    sizeof(axiom_lmm_region_t));
+
+	printf("elem=%d\n", n_elem);
+	freelist_init_from_buffer(lmm->workspace, FREELIST_SPACE(n_elem));
+
+	region_pool = get_region_pool(lmm);
+	fl = get_freelist(lmm);
+	printf("WS:%p fl:%p rp:%p\n", lmm->workspace, fl, region_pool);
 }
 
 static inline void dump_region(struct axiom_lmm_region *r)
@@ -57,6 +79,14 @@ static int axiom_lmm_merge_region(axiom_lmm_t *lmm,
 		return -1;
 	}
 
+	if (!is_mergeable_address(lmm, tokeep)
+	    || !is_mergeable_address(lmm, tomerge)) {
+		DBG("No merge-able regions T:%d M:%d\n",
+		    is_mergeable_address(lmm, tokeep),
+		    is_mergeable_address(lmm, tomerge));
+		return 0;
+	}
+
 	if (tokeep->end == tomerge->start) {
 		struct axiom_lmm_node *n;
 
@@ -70,6 +100,8 @@ static int axiom_lmm_merge_region(axiom_lmm_t *lmm,
 #if 1
 		if ((uintptr_t)n + n->size == (uintptr_t)tomerge->nodes) {
 			int idx;
+			axiom_lmm_region_t *region_pool = get_region_pool(lmm);
+			freelist_t *fl = get_freelist(lmm);
 
 			/* last free zone of tokeep is contiguous with the
 			 * first free zone of tomerge. */
@@ -78,10 +110,9 @@ static int axiom_lmm_merge_region(axiom_lmm_t *lmm,
 			fprintf(stderr, "Merged NODES (%zu)\n", tomerge->nodes->size);
 fprintf(stderr, "T:%p B:%p\n", tomerge, &(lmm->region_pool[0]));
 			idx = ((uintptr_t)tomerge -
-			       (uintptr_t)&(lmm->region_pool[0]))
+			       (uintptr_t)region_pool)
 			      / sizeof(*tomerge);
-			freelist_free_idx(lmm->fl, idx);
-
+			freelist_free_idx(fl, idx);
 		} else {
 			n->next = tomerge->nodes;
 			fprintf(stderr, "NO Merged NODES\n");
@@ -100,21 +131,38 @@ fprintf(stderr, "T:%p B:%p\n", tomerge, &(lmm->region_pool[0]));
 	return 0;
 }
 
-#ifdef FIXED_REGIONS
+static inline freelist_t *get_freelist(axiom_lmm_t *lmm)
+{
+	freelist_t *fl = (freelist_t *)(lmm->workspace);
+	return fl;
+}
+
+static inline axiom_lmm_region_t *get_region_pool(axiom_lmm_t *lmm)
+{
+	axiom_lmm_region_t *rp;
+	freelist_t *fl = get_freelist(lmm);
+
+	rp = (axiom_lmm_region_t *)((uintptr_t)&(lmm->workspace[0])
+				    + FREELIST_SPACE(fl->n_elem));
+
+	return rp;
+}
+
 int axiom_lmm_add_reg(axiom_lmm_t *lmm, void *addr, size_t size,
 		      axiom_lmm_flags_t flags, axiom_lmm_pri_t prio)
 {
 	axiom_lmm_region_t *region;
-	int idx = freelist_alloc_idx(lmm->fl);
+	freelist_t *fl = get_freelist(lmm);
+	axiom_lmm_region_t *region_pool = get_region_pool(lmm);
+	int idx = freelist_alloc_idx(fl);
 
 	if (idx == FREELIST_INVALID_IDX)
 		return AXIOM_LMM_INVALID_MEM_DESC;
 
-	region = &(lmm->region_pool[idx]);
+	region = &(region_pool[idx]);
 
 	return axiom_lmm_add_region(lmm, region, addr, size, flags, prio);
 }
-#endif
 
 int axiom_lmm_add_region_ORIG(axiom_lmm_t *lmm, axiom_lmm_region_t *region,
 			 void *addr, size_t size, axiom_lmm_flags_t flags,

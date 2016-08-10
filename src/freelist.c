@@ -102,7 +102,15 @@ int freelist_free_idx(freelist_t *fl, int idx)
 #endif
 	fl->idx_vec[idx] = fl->free_p;
 	fl->free_p = idx;
-	fprintf(stderr, "%s] idx = %d\n", __func__, idx);
+	DBG("idx = %d\n", idx);
 	
 	return FREELIST_OK;
+}
+
+int freelist_elem_for_memblock(size_t mem_size, size_t elem_size)
+{
+	freelist_t *fl;
+
+	return (mem_size - sizeof(freelist_t))
+		/ (elem_size + sizeof(fl->free_p));
 }
