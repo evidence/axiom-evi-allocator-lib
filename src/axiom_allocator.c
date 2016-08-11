@@ -1,5 +1,6 @@
 #include <pthread.h>
 #include <stdlib.h>
+#include <inttypes.h>
 #include <stdint.h>
 
 #include <axiom_lmm.h>
@@ -17,6 +18,7 @@
 #include <assert.h>
 
 #undef DEBUG
+#define DEBUG
 #include <debug.h>
 
 #define BLOCK_REQ_SIZE (128 * 1024 * 1024)
@@ -49,7 +51,8 @@ void axiom_allocator_init(uintptr_t saddr, uintptr_t eaddr)
 	assert(err == AXIOM_LMM_OK);
 
 	err = open("/dev/axiom_dev_mem0", O_RDWR);
-	assert(err < 0);
+	DBG("open return %d\n", err);
+	assert(err >= 0);
 
 	axiom_mem_hdlr.mem_dev_fd = err;
 
@@ -78,10 +81,10 @@ static void *axiom_request_private_region(unsigned long size)
                 return NULL;
         }
 
-        printf("request B:0x%lx S:%ld\n", request.base, request.size);
+        DBG("request B:0x%lx S:%ld\n", request.base, request.size);
 
         mem = (void *)(start_addr + request.base);
-        printf("protect B:%p S:%ld\n", mem, request.size);
+        DBG("protect B:%p S:%ld\n", mem, request.size);
         if (mprotect(mem, request.size, PROT_WRITE | PROT_READ)) {
                 perror("mprotect");
                 return NULL;
