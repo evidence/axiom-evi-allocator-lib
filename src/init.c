@@ -132,7 +132,7 @@ static int axiom_lmm_merge_region(axiom_lmm_t *lmm,
 
 		for (n = tokeep->nodes; n->next != NULL; n = n->next) ;
 		assert(n != NULL);
-#if 1
+
 		if ((uintptr_t)n + n->size == (uintptr_t)tomerge->nodes) {
 			int idx;
 			axiom_region_desc_t *region_pool = get_region_pool(lmm);
@@ -152,9 +152,7 @@ static int axiom_lmm_merge_region(axiom_lmm_t *lmm,
 			n->next = tomerge->nodes;
 			DBG("NO Merged NODES\n");
 		}
-#else
-		n->next = tomerge->nodes;
-#endif
+
 		DBG("n=%p n->next=%p n+size=%"PRIxPTR"\n", n, n->next,
 		    (uintptr_t)n + n->size);
 		DBG("tomerge->nodes=%p\n", tomerge->nodes);
@@ -211,95 +209,13 @@ int axiom_lmm_add_reg(axiom_lmm_t *lmm, void *addr, size_t size,
 	return axiom_lmm_add_region(lmm, region, addr, size, flags, prio);
 }
 
-#if 0
-int axiom_lmm_add_region_ORIG(axiom_lmm_t *lmm, axiom_region_desc_t *region,
-			 void *addr, size_t size, axiom_region_flags_t flags,
-			 axiom_region_prio_t prio)
-{
-	uintptr_t min = (uintptr_t)addr;
-	uintptr_t max = min + size;
-	struct axiom_region_desc **rp, *r;
-
-	min = (min + AXIOM_LMM_ALIGN_MASK) & ~AXIOM_LMM_ALIGN_MASK;
-	max &= ~AXIOM_LMM_ALIGN_MASK;
-
-	if (max <= min) {
-		DBG("invalid region 0x%"PRIxPTR" 0x%"PRIxPTR"\n", min, max);
-		return AXIOM_LMM_INVALID_REGION;
-	}
-
-	region->nodes = NULL;
-	region->start = min;
-	region->end = max;
-	region->flags = flags;
-	region->prio = prio;
-	region->free = 0;
-
-	rp = &(lmm->regions);
-
-	if (*rp == region) {
-		DBG("region already in the pool\n");
-		return AXIOM_LMM_OK;
-	}
-
-	for (r = lmm->regions;
-	     r && ((r->prio > prio)
-		   || ((r->prio == prio)
-			&& ((r->end - r->start) > (max - min))));
-	     rp = &(r->next), r = r->next) {
-		if (r == region) {
-			DBG("region already in the pool\n");
-			return AXIOM_LMM_OK;
-		}
-		/* assert((max <= r->start) || (min >= r->end)); */
-	}
-	region->next = r;
-	*rp = region;
-
-#ifndef REMOVED_API
-	axiom_lmm_free_in_region(region, (void *)region->start,
-				 region->end - region->start);
-#endif
-
-	DBG("+++++++++++++++++++++++++\n");
-	DBG("Region %p\n", region);
-	if (rp == &(lmm->regions)) {
-		DBG("Added on TOP\n");
-	} else {
-		struct axiom_region_desc *reg;
-
-		reg = container_of(rp, struct axiom_region_desc, next);
-		DBG("Added after %p %p\n", rp, reg);
-		axiom_lmm_merge_region(lmm, reg, region);
-	}
-	if (region->next == NULL) {
-		DBG("Added as LAST element\n");
-	} else {
-		struct axiom_region_desc *reg = region->next;
-		DBG("Added before %p\n", reg);
-		axiom_lmm_merge_region(lmm, region, reg);
-	}
-	DBG("+++++++++++++++++++++++++\n");
-
-	DBG("Added prio:%d min:0x%"PRIxPTR" max:0x%"PRIxPTR"\n",
-	    region->prio, region->start, region->end);
-
-	return AXIOM_LMM_OK;
-}
-#endif
-
 void axiom_lmm_dump_regions(axiom_lmm_t *lmm)
 {
 	int cnt = 0;
 	struct axiom_region_desc *r;
 
 	for (r = lmm->regions; r; r = r->next) {
-#if 0
-		fprintf(stderr, "R:%p prio:%d m:0x%"PRIxPTR" M:0x%"PRIxPTR" sz:%zu\n",
-			r, r->prio, r->start, r->end, r->end - r->start);
-#else
 		dump_region(r);
-#endif
 		++cnt;
 	}
 	fprintf(stderr, "Num regions: %d\n", cnt);
@@ -428,11 +344,7 @@ int axiom_lmm_free(axiom_lmm_t *lmm, void *block, size_t size)
 		return AXIOM_LMM_INVALID_BLOCK;
 	if (size <= 0)
 		return AXIOM_LMM_INVALID_SIZE;
-#if 0
-	size = (((uintptr_t)block & AXIOM_LMM_ALIGN_MASK) + size
-		+ AXIOM_LMM_ALIGN_MASK)
-		& ~AXIOM_LMM_ALIGN_MASK;
-#endif
+
 	/* First find the region to add this block to.  */
 	for (reg = lmm->regions; ; reg = reg->next)
 	{
@@ -446,65 +358,9 @@ int axiom_lmm_free(axiom_lmm_t *lmm, void *block, size_t size)
 		    && ((uintptr_t)node < reg->end))
 			break;
 	}
-#if 1
+
 	axiom_lmm_free_in_region(reg, block, size);
-#else
-	/* Record the newly freed space in the region's free space counter.  */
-	reg->free += size;
-	assert(reg->free <= reg->end - reg->start);
 
-	/* Now find the location in that region's free list
-	   at which to add the node.  */
-	for (prevnode = 0, nextnode = reg->nodes;
-	     (nextnode != 0) && (nextnode < node);
-	     prevnode = nextnode, nextnode = nextnode->next);
-
-	/* Coalesce the new free chunk into the previous chunk if possible.  */
-	if ((prevnode) &&
-	    ((uintptr_t)prevnode + prevnode->size >= (uintptr_t)node))
-	{
-		assert((uintptr_t)prevnode + prevnode->size
-		       == (uintptr_t)node);
-
-		/* Coalesce prevnode with nextnode if possible.  */
-		if (((uintptr_t)nextnode)
-		    && ((uintptr_t)node + size >= (uintptr_t)nextnode))
-		{
-			assert((uintptr_t)node + size
-			       == (uintptr_t)nextnode);
-
-			prevnode->size += size + nextnode->size;
-			prevnode->next = nextnode->next;
-		}
-		else
-		{
-			/* Not possible -
-			   just grow prevnode around newly freed memory.  */
-			prevnode->size += size;
-		}
-	}
-	else
-	{
-		/* Insert the new node into the free list.  */
-		if (prevnode)
-			prevnode->next = node;
-		else
-			reg->nodes = node;
-
-		/* Try coalescing the new node with the nextnode.  */
-		if ((nextnode) &&
-		    (uintptr_t)node + size >= (uintptr_t)nextnode)
-		{
-			node->size = size + nextnode->size;
-			node->next = nextnode->next;
-		}
-		else
-		{
-			node->size = size;
-			node->next = nextnode;
-		}
-	}
-#endif
 	return AXIOM_LMM_OK;
 }
 
