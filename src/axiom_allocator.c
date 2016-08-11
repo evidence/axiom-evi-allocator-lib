@@ -93,12 +93,6 @@ static void *axiom_request_private_region(unsigned long size)
         return mem;
 }
 
-#define ADJ_PTR_SIZE(ptr, sz)                              \
-do {                                                       \
-	*((size_t *) ptr) = sz;                            \
-	ptr = (void *)((uintptr_t)ptr + sizeof(size_t));   \
-} while(0)
-
 static void *private_alloc_with_region(size_t nsize)
 {
 	size_t bs;
@@ -137,8 +131,10 @@ void *axiom_private_malloc(size_t sz)
 	if (ptr == NULL)
 		ptr = private_alloc_with_region(nsize);
 
-	if (ptr != NULL)
-		ADJ_PTR_SIZE(ptr, nsize);
+	if (ptr != NULL) {
+		*((size_t *) ptr) = nsize;
+		ptr = (void *)((uintptr_t)ptr + sizeof(size_t));
+	}
 
 	pthread_mutex_unlock(&axiom_mem_hdlr.mutex);
 
