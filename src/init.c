@@ -1,3 +1,7 @@
+/**
+ * @file
+ */
+
 #include <stdio.h>
 #include <inttypes.h>
 #include <stddef.h>
@@ -9,8 +13,14 @@
 
 #include <freelist.h>
 
+/**
+ * \cond INTERNAL_MACRO
+ */
 #define DEBUG
 #define DEBUG_NO_TIME
+/**
+ * \endcond
+ */
 #include <debug.h>
 
 static void axiom_lmm_free_in_region(struct axiom_lmm_region *reg,
@@ -69,9 +79,15 @@ static inline void dump_region(struct axiom_lmm_region *r)
 		r->free, (r->end - r->start), r->nodes);
 }
 
+/**
+ * \cond INTERNAL_MACRO
+ */
 #define container_of(ptr, type, member) ({                        \
 	const typeof( ((type *)0)->member ) *member_ptr = (ptr);  \
 	(type *)( (char *)member_ptr - offsetof(type,member) );})
+/**
+ * \endcond
+ */
 
 static int axiom_lmm_merge_region(axiom_lmm_t *lmm,
 				  axiom_lmm_region_t *tokeep,
@@ -565,30 +581,32 @@ static inline uintptr_t axiom_lmm_adjust_align(uintptr_t addr, int align_bits,
 }
 
 /**
-    @lmm[in]     The memory pool from which to allocate.
-    @size[in]    The number of contiguous bytes of memory needed.
-    @flags[in]   The memory type required for this allocation. For each bit set
-		 in the flags parameter, the corresponding bit in a region's
-		 flags word must also be set in order for the region to be
-		 considered for allocation. If the flags parameter is zero,
-		 memory will be allocated from any region.
-    @align_bits  The number of low bits of the returned memory block address
-		 that must match the corresponding bits in align_ofs.
-    @align_ofs   The required offset from natural power-of-two alignment.
-		 If align_ofs is zero, then the returned memory block will be
-		 naturally aligned on a 2^align_bits boundary.
-    @in_min      Start address of the address range in which to search for a
-		 free block. The returned memory block, if found, will have an
-		 address no lower than in_min.
-    @in_size     Size of the address range in which to search for the free
-		 block. The returned memory block, if found, will fit entirely
-		 within this address range, so that
-		 mem_block+size <= in_min + in_size
-
-    @return      Returns a pointer to the memory block allocated, or NULL
-		 if no memory block satisfying all of the specified requirements
-		 can be found.
-*/
+ * \brief Allocates memory using the specified constraints
+ *
+ * \param lmm     The memory pool where to allocate.
+ * \param size    Size of needed memory.
+ * \param flags   The memory type required for this allocation. For each bit set
+ *                in the flags parameter, the corresponding bit in a region's
+ *                flags word must also be set in order for the region to be
+ *                considered for allocation. If the flags parameter is zero,
+ *                memory will be allocated from any region.
+ * \param align_bits The number of low bits of the returned memory block address
+ *                   that must match the corresponding bits in align_ofs.
+ * \param align_ofs  The required offset from natural power-of-two alignment.
+ *                   The returned memory block will be aligned on a
+ *                   2^align_bits + align_ofs boundary.
+ * \param in_min  Start address of the address range in which to search for a
+ *                free block. The returned memory block, if found, will have an
+ *                address no lower than in_min.
+ * \param in_size Size of the address range in which to search for the free
+ *                block. The returned memory block, if found, will fit entirely
+ *                within this address range, so that
+ *                mem_block + size <= in_min + in_size
+ *
+ * \return        Returns a pointer to the allocated memory or NULL
+ *                if there is no memory block that satisfy all of the specified
+ *                constraints.
+ */
 void *axiom_lmm_alloc_gen(axiom_lmm_t *lmm, size_t size,
 			  axiom_lmm_flags_t flags, int align_bits,
 			  uintptr_t align_ofs, uintptr_t in_min,
