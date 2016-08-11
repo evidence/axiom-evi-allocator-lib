@@ -2,6 +2,11 @@
 #define AXIOM_ALLOCATOR_H
 
 /**
+ * \defgroup AXIOM_ALLOCATOR
+ *
+ * \{
+ */
+/**
  * \brief Initialize the allocator
  *
  * \param saddr virtual address start of the allocator
@@ -24,5 +29,7 @@ void *axiom_private_malloc(size_t sz);
  * \param ptr  Pointer to the memory to free
  */
 void axiom_free(void *ptr);
+
+/** \} */
 
 #endif /* AXIOM_ALLOCATOR_H*/

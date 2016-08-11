@@ -23,6 +23,12 @@
  */
 #include <debug.h>
 
+/**
+ * \defgroup AXIOM_LMM
+ *
+ * \{
+ */
+
 static void axiom_lmm_free_in_region(struct axiom_region_desc *reg,
 				     void *block, size_t size);
 
@@ -789,3 +795,5 @@ int axiom_lmm_add_region(axiom_lmm_t *lmm, axiom_region_desc_t *region,
 
 	return AXIOM_LMM_OK;
 }
+
+/** \} */
