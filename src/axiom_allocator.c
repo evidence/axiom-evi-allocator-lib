@@ -1,5 +1,7 @@
 /**
  * \file
+ *
+ * \brief Implements libc malloc/free style functions
  */
 
 #include <pthread.h>
