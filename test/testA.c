@@ -8,10 +8,10 @@
 int main()
 {
 	axiom_lmm_t almm;
-	axiom_lmm_region_t areg1;
-	axiom_lmm_region_t areg2;
-	axiom_lmm_region_t areg3;
-	axiom_lmm_region_t areg4;
+	axiom_region_desc_t areg1;
+	axiom_region_desc_t areg2;
+	axiom_region_desc_t areg3;
+	axiom_region_desc_t areg4;
 	int i;
 	int err;
 
@@ -47,7 +47,8 @@ int main()
 		}
 	}
 
-	printf("sizeof axiom_lmm_node %zu\n", sizeof(struct axiom_lmm_node));
+	printf("sizeof axiom_freelist_node %zu\n",
+	       sizeof(struct axiom_freelist_node));
 	err = axiom_lmm_add_region(&almm, &areg1, p[1],
 				   REGION_SIZE, AXIOM_PRIVATE_MEM, 5);
 	if (err != AXIOM_LMM_OK) {

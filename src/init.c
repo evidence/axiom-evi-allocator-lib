@@ -23,18 +23,18 @@
  */
 #include <debug.h>
 
-static void axiom_lmm_free_in_region(struct axiom_lmm_region *reg,
+static void axiom_lmm_free_in_region(struct axiom_region_desc *reg,
 				     void *block, size_t size);
 
-static inline axiom_lmm_region_t *get_region_pool(axiom_lmm_t *lmm);
+static inline axiom_region_desc_t *get_region_pool(axiom_lmm_t *lmm);
 static inline freeidx_list_t *get_freeidx_list(axiom_lmm_t *lmm);
 
-static inline int is_mergeable_address(axiom_lmm_t *lmm, axiom_lmm_region_t *r)
+static inline int is_mergeable_address(axiom_lmm_t *lmm, axiom_region_desc_t *r)
 {
 	int res;
 	freeidx_list_t *fl = get_freeidx_list(lmm);
 	uintptr_t start = (uintptr_t)get_region_pool(lmm);
-	uintptr_t end = start + fl->n_elem * sizeof(axiom_lmm_region_t);
+	uintptr_t end = start + fl->n_elem * sizeof(axiom_region_desc_t);
 	uintptr_t ra = (uintptr_t)r;
 
 	res = (start <= ra) && (ra < end);
@@ -45,13 +45,13 @@ static inline int is_mergeable_address(axiom_lmm_t *lmm, axiom_lmm_region_t *r)
 int axiom_lmm_init(axiom_lmm_t *lmm)
 {
 	int n_elem;
-	axiom_lmm_region_t *region_pool;
+	axiom_region_desc_t *region_pool;
 	freeidx_list_t *fl;
 
 	lmm->regions = NULL;
 
 	n_elem = freeidx_list_elem_for_memblock(sizeof(lmm->workspace),
-					    sizeof(axiom_lmm_region_t));
+						sizeof(axiom_region_desc_t));
 	if (n_elem <= 0) {
 		DBG("No room for region descriptors (%d <= 0!)\n", n_elem);
 		return AXIOM_LMM_INVALID_MEM_DESC;
@@ -71,7 +71,7 @@ int axiom_lmm_init(axiom_lmm_t *lmm)
 	return AXIOM_LMM_OK;
 }
 
-static inline void dump_region(struct axiom_lmm_region *r)
+static inline void dump_region(struct axiom_region_desc *r)
 {
 	fprintf(stderr, "R:%p prio:%d m:0x%"PRIxPTR" M:0x%"PRIxPTR" sz:%zu"\
 		" F:%zu diff:%zu nodes:%p\n",
@@ -90,8 +90,8 @@ static inline void dump_region(struct axiom_lmm_region *r)
  */
 
 static int axiom_lmm_merge_region(axiom_lmm_t *lmm,
-				  axiom_lmm_region_t *tokeep,
-				  axiom_lmm_region_t *tomerge)
+				  axiom_region_desc_t *tokeep,
+				  axiom_region_desc_t *tomerge)
 {
 	DBG("Comparing K:%p M:%p\n", tokeep, tomerge);
 	DBG("K:%p s:0x%"PRIxPTR" - e:0x%"PRIxPTR"\n",
@@ -118,7 +118,7 @@ static int axiom_lmm_merge_region(axiom_lmm_t *lmm,
 	}
 
 	if (tokeep->end == tomerge->start) {
-		struct axiom_lmm_node *n;
+		struct axiom_freelist_node *n;
 
 		DBG("Can be merged\n");
 		tokeep->end = tomerge->end;
@@ -130,7 +130,7 @@ static int axiom_lmm_merge_region(axiom_lmm_t *lmm,
 #if 1
 		if ((uintptr_t)n + n->size == (uintptr_t)tomerge->nodes) {
 			int idx;
-			axiom_lmm_region_t *region_pool = get_region_pool(lmm);
+			axiom_region_desc_t *region_pool = get_region_pool(lmm);
 			freeidx_list_t *fl = get_freeidx_list(lmm);
 
 			/* last free zone of tokeep is contiguous with the
@@ -167,23 +167,23 @@ static inline freeidx_list_t *get_freeidx_list(axiom_lmm_t *lmm)
 	return fl;
 }
 
-static inline axiom_lmm_region_t *get_region_pool(axiom_lmm_t *lmm)
+static inline axiom_region_desc_t *get_region_pool(axiom_lmm_t *lmm)
 {
-	axiom_lmm_region_t *rp;
+	axiom_region_desc_t *rp;
 	freeidx_list_t *fl = get_freeidx_list(lmm);
 
-	rp = (axiom_lmm_region_t *)((uintptr_t)&(lmm->workspace[0])
-				    + FREELIST_SPACE(fl->n_elem));
+	rp = (axiom_region_desc_t *)((uintptr_t)&(lmm->workspace[0])
+				     + FREELIST_SPACE(fl->n_elem));
 
 	return rp;
 }
 
 int axiom_lmm_add_reg(axiom_lmm_t *lmm, void *addr, size_t size,
-		      axiom_lmm_flags_t flags, axiom_lmm_pri_t prio)
+		      axiom_region_flags_t flags, axiom_region_prio_t prio)
 {
-	axiom_lmm_region_t *region;
+	axiom_region_desc_t *region;
 	freeidx_list_t *fl = get_freeidx_list(lmm);
-	axiom_lmm_region_t *region_pool = get_region_pool(lmm);
+	axiom_region_desc_t *region_pool = get_region_pool(lmm);
 	int idx = freeidx_list_alloc_idx(fl);
 
 	if (idx == FREELIST_INVALID_IDX)
@@ -194,13 +194,14 @@ int axiom_lmm_add_reg(axiom_lmm_t *lmm, void *addr, size_t size,
 	return axiom_lmm_add_region(lmm, region, addr, size, flags, prio);
 }
 
-int axiom_lmm_add_region_ORIG(axiom_lmm_t *lmm, axiom_lmm_region_t *region,
-			 void *addr, size_t size, axiom_lmm_flags_t flags,
-			 axiom_lmm_pri_t prio)
+#if 0
+int axiom_lmm_add_region_ORIG(axiom_lmm_t *lmm, axiom_region_desc_t *region,
+			 void *addr, size_t size, axiom_region_flags_t flags,
+			 axiom_region_prio_t prio)
 {
 	uintptr_t min = (uintptr_t)addr;
 	uintptr_t max = min + size;
-	struct axiom_lmm_region **rp, *r;
+	struct axiom_region_desc **rp, *r;
 
 	min = (min + AXIOM_LMM_ALIGN_MASK) & ~AXIOM_LMM_ALIGN_MASK;
 	max &= ~AXIOM_LMM_ALIGN_MASK;
@@ -248,16 +249,16 @@ int axiom_lmm_add_region_ORIG(axiom_lmm_t *lmm, axiom_lmm_region_t *region,
 	if (rp == &(lmm->regions)) {
 		DBG("Added on TOP\n");
 	} else {
-		struct axiom_lmm_region *reg;
+		struct axiom_region_desc *reg;
 
-		reg = container_of(rp, struct axiom_lmm_region, next);
+		reg = container_of(rp, struct axiom_region_desc, next);
 		DBG("Added after %p %p\n", rp, reg);
 		axiom_lmm_merge_region(lmm, reg, region);
 	}
 	if (region->next == NULL) {
 		DBG("Added as LAST element\n");
 	} else {
-		struct axiom_lmm_region *reg = region->next;
+		struct axiom_region_desc *reg = region->next;
 		DBG("Added before %p\n", reg);
 		axiom_lmm_merge_region(lmm, region, reg);
 	}
@@ -268,11 +269,12 @@ int axiom_lmm_add_region_ORIG(axiom_lmm_t *lmm, axiom_lmm_region_t *region,
 
 	return AXIOM_LMM_OK;
 }
+#endif
 
 void axiom_lmm_dump_regions(axiom_lmm_t *lmm)
 {
 	int cnt = 0;
-	struct axiom_lmm_region *r;
+	struct axiom_region_desc *r;
 
 	for (r = lmm->regions; r; r = r->next) {
 #if 0
@@ -288,13 +290,13 @@ void axiom_lmm_dump_regions(axiom_lmm_t *lmm)
 
 void axiom_lmm_dump(axiom_lmm_t *lmm)
 {
-	struct axiom_lmm_region *reg;
+	struct axiom_region_desc *reg;
 
 	fprintf(stderr, "%s(lmm=%p)\n", __func__, lmm);
 
 	for (reg = lmm->regions; reg; reg = reg->next)
 	{
-		struct axiom_lmm_node *node;
+		struct axiom_freelist_node *node;
 		size_t free_check;
 
 		fprintf(stderr, " region %08lx-%08lx size=%zu flags=%08lx pri=%d free=%zu\n",
@@ -325,11 +327,11 @@ void axiom_lmm_dump(axiom_lmm_t *lmm)
 	fprintf(stderr, "%s done\n", __func__);
 }
 
-static void axiom_lmm_free_in_region(struct axiom_lmm_region *reg,
+static void axiom_lmm_free_in_region(struct axiom_region_desc *reg,
 				     void *block, size_t size)
 {
-	struct axiom_lmm_node *prevnode, *nextnode;
-	struct axiom_lmm_node *node = (struct axiom_lmm_node*)
+	struct axiom_freelist_node *prevnode, *nextnode;
+	struct axiom_freelist_node *node = (struct axiom_freelist_node*)
 				((uintptr_t)block & ~AXIOM_LMM_ALIGN_MASK);
 
 	size = (((uintptr_t)block & AXIOM_LMM_ALIGN_MASK) + size
@@ -387,10 +389,10 @@ static void axiom_lmm_free_in_region(struct axiom_lmm_region *reg,
 
 int axiom_lmm_free(axiom_lmm_t *lmm, void *block, size_t size)
 {
-	struct axiom_lmm_region *reg;
-	struct axiom_lmm_node *node = (struct axiom_lmm_node*)
+	struct axiom_region_desc *reg;
+	struct axiom_freelist_node *node = (struct axiom_freelist_node*)
 				((uintptr_t)block & ~AXIOM_LMM_ALIGN_MASK);
-	/*struct axiom_lmm_node *prevnode, *nextnode;*/
+	/*struct axiom_freelist_node *prevnode, *nextnode;*/
 
 	assert(lmm != 0);
 	if (lmm == NULL)
@@ -479,10 +481,10 @@ int axiom_lmm_free(axiom_lmm_t *lmm, void *block, size_t size)
 	return AXIOM_LMM_OK;
 }
 
-static void *axiom_lmm_alloc_find_node(struct axiom_lmm_region *reg,
+static void *axiom_lmm_alloc_find_node(struct axiom_region_desc *reg,
 				       size_t size)
 {
-	struct axiom_lmm_node **nodep, *node;
+	struct axiom_freelist_node **nodep, *node;
 
 	for (nodep = &reg->nodes; *nodep != 0; nodep = &node->next) {
 		node = *nodep;
@@ -496,10 +498,10 @@ static void *axiom_lmm_alloc_find_node(struct axiom_lmm_region *reg,
 			continue;
 
 		if (node->size > size) {
-			struct axiom_lmm_node *newnode;
+			struct axiom_freelist_node *newnode;
 
 			/* Split the node and return its head */
-			newnode = (struct axiom_lmm_node*)
+			newnode = (struct axiom_freelist_node*)
 					((void*)node + size);
 			newnode->next = node->next;
 			newnode->size = node->size - size;
@@ -519,9 +521,9 @@ static void *axiom_lmm_alloc_find_node(struct axiom_lmm_region *reg,
 	return NULL;
 }
 
-void *axiom_lmm_alloc(axiom_lmm_t *lmm, size_t size, axiom_lmm_flags_t flags)
+void *axiom_lmm_alloc(axiom_lmm_t *lmm, size_t size, axiom_region_flags_t flags)
 {
-	struct axiom_lmm_region *reg;
+	struct axiom_region_desc *reg;
 
 	if (lmm == NULL || size <= 0)
 		return NULL;
@@ -546,9 +548,9 @@ void *axiom_lmm_alloc(axiom_lmm_t *lmm, size_t size, axiom_lmm_flags_t flags)
 	return NULL;
 }
 
-size_t axiom_lmm_avail(axiom_lmm_t *lmm, axiom_lmm_flags_t flags)
+size_t axiom_lmm_avail(axiom_lmm_t *lmm, axiom_region_flags_t flags)
 {
-	struct axiom_lmm_region *reg;
+	struct axiom_region_desc *reg;
 	size_t avail = 0;
 
 	for (reg = lmm->regions; reg; reg = reg->next)
@@ -608,19 +610,19 @@ static inline uintptr_t axiom_lmm_adjust_align(uintptr_t addr, int align_bits,
  *                constraints.
  */
 void *axiom_lmm_alloc_gen(axiom_lmm_t *lmm, size_t size,
-			  axiom_lmm_flags_t flags, int align_bits,
+			  axiom_region_flags_t flags, int align_bits,
 			  uintptr_t align_ofs, uintptr_t in_min,
 			  size_t in_size)
 {
 	uintptr_t in_max = in_min + in_size;
-	struct axiom_lmm_region *reg;
+	struct axiom_region_desc *reg;
 
 	assert(lmm != 0);
 	assert(size > 0);
 
 	for (reg = lmm->regions; reg; reg = reg->next)
 	{
-		struct axiom_lmm_node **nodep, *node;
+		struct axiom_freelist_node **nodep, *node;
 
 		/*TODO:*/
 		/* CHECKREGPTR(reg); */
@@ -633,7 +635,7 @@ void *axiom_lmm_alloc_gen(axiom_lmm_t *lmm, size_t size,
 
 		for (nodep = &reg->nodes; *nodep != 0; nodep = &node->next) {
 			uintptr_t addr;
-			struct axiom_lmm_node *anode;
+			struct axiom_freelist_node *anode;
 
 			node = *nodep;
 			assert(((uintptr_t)node & AXIOM_LMM_ALIGN_MASK) == 0);
@@ -669,7 +671,7 @@ void *axiom_lmm_alloc_gen(axiom_lmm_t *lmm, size_t size,
 
 			/* If the allocation leaves at least AXIOM_LMM_ALIGN_SIZE
 			   space before it, then split the node.  */
-			anode = (struct axiom_lmm_node*)(addr & ~AXIOM_LMM_ALIGN_MASK);
+			anode = (struct axiom_freelist_node*)(addr & ~AXIOM_LMM_ALIGN_MASK);
 			assert(anode >= node);
 			if (anode > node) {
 				size_t split_size = (uintptr_t)anode
@@ -687,10 +689,10 @@ void *axiom_lmm_alloc_gen(axiom_lmm_t *lmm, size_t size,
 			size = ((addr & AXIOM_LMM_ALIGN_MASK) + size + AXIOM_LMM_ALIGN_MASK)
 				& ~AXIOM_LMM_ALIGN_MASK;
 			if (anode->size > size) {
-				struct axiom_lmm_node *newnode;
+				struct axiom_freelist_node *newnode;
 
 				/* Split the node and return its head.  */
-				newnode = (struct axiom_lmm_node*)
+				newnode = (struct axiom_freelist_node*)
 						((void*)anode + size);
 				newnode->next = anode->next;
 				newnode->size = anode->size - size;
@@ -712,7 +714,7 @@ void *axiom_lmm_alloc_gen(axiom_lmm_t *lmm, size_t size,
 }
 
 void *axiom_lmm_alloc_aligned(axiom_lmm_t *lmm, size_t size,
-			      axiom_lmm_flags_t flags, int align_bits,
+			      axiom_region_flags_t flags, int align_bits,
 			      uintptr_t align_ofs)
 {
 	return axiom_lmm_alloc_gen(lmm, size, flags, align_bits, align_ofs,
@@ -726,7 +728,7 @@ void *axiom_lmm_alloc_aligned(axiom_lmm_t *lmm, size_t size,
 /* REMOVED API */
 int axiom_lmm_add_free(axiom_lmm_t *lmm, void *block, size_t size)
 {
-	struct axiom_lmm_region *reg;
+	struct axiom_region_desc *reg;
 	uintptr_t min = (uintptr_t) block;
 	uintptr_t max = min + size;
 	int err;
@@ -782,13 +784,13 @@ int axiom_lmm_add_free(axiom_lmm_t *lmm, void *block, size_t size)
 }
 #endif
 
-int axiom_lmm_add_region(axiom_lmm_t *lmm, axiom_lmm_region_t *region,
-			  void *addr, size_t size, axiom_lmm_flags_t flags,
-			  axiom_lmm_pri_t prio)
+int axiom_lmm_add_region(axiom_lmm_t *lmm, axiom_region_desc_t *region,
+			  void *addr, size_t size, axiom_region_flags_t flags,
+			  axiom_region_prio_t prio)
 {
 	uintptr_t start = (uintptr_t)addr;
 	uintptr_t end = start + size;
-	struct axiom_lmm_region **rp, *r;
+	struct axiom_region_desc **rp, *r;
 
 	start = (start + AXIOM_LMM_ALIGN_MASK) & ~AXIOM_LMM_ALIGN_MASK;
 	end &= ~AXIOM_LMM_ALIGN_MASK;
@@ -837,16 +839,16 @@ int axiom_lmm_add_region(axiom_lmm_t *lmm, axiom_lmm_region_t *region,
 	if (rp == &(lmm->regions)) {
 		DBG("Added on TOP\n");
 	} else {
-		struct axiom_lmm_region *reg;
+		struct axiom_region_desc *reg;
 
-		reg = container_of(rp, struct axiom_lmm_region, next);
+		reg = container_of(rp, struct axiom_region_desc, next);
 		DBG("Added after %p %p\n", rp, reg);
 		axiom_lmm_merge_region(lmm, reg, region);
 	}
 	if (region->next == NULL) {
 		DBG("Added as LAST element\n");
 	} else {
-		struct axiom_lmm_region *reg = region->next;
+		struct axiom_region_desc *reg = region->next;
 		DBG("Added before %p\n", reg);
 		axiom_lmm_merge_region(lmm, region, reg);
 	}
