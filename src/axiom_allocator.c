@@ -93,6 +93,40 @@ static void *axiom_request_private_region(unsigned long size)
         return mem;
 }
 
+#define ADJ_PTR_SIZE(ptr, sz)                              \
+do {                                                       \
+	*((size_t *) ptr) = sz;                            \
+	ptr = (void *)((uintptr_t)ptr + sizeof(size_t));   \
+} while(0)
+
+static void *private_alloc_with_region(size_t nsize)
+{
+	size_t bs;
+	void *addr;
+	void *ptr = NULL;
+	int err;
+
+	bs = ((nsize + BLOCK_REQ_SIZE - 1) / BLOCK_REQ_SIZE)
+	     * BLOCK_REQ_SIZE;
+	DBG("Request region of size: %zu\n", bs);
+	addr = axiom_request_private_region(bs);
+	DBG("private region address: %p\n", addr);
+
+	if (addr == NULL)
+		return ptr;
+
+	err = axiom_lmm_add_reg(&axiom_mem_hdlr.almm, addr, bs,
+			  AXIOM_PRIVATE_MEM,
+			  DEFAULT_PRIO);
+	if (err != AXIOM_LMM_OK)
+		return ptr;
+
+	ptr = axiom_lmm_alloc(&axiom_mem_hdlr.almm, nsize,
+			      AXIOM_PRIVATE_MEM);
+
+	return ptr;
+}
+
 void *axiom_private_malloc(size_t sz)
 {
 	void *ptr;
@@ -100,25 +134,36 @@ void *axiom_private_malloc(size_t sz)
 
 	pthread_mutex_lock(&axiom_mem_hdlr.mutex);
 	ptr = axiom_lmm_alloc(&axiom_mem_hdlr.almm, nsize, AXIOM_PRIVATE_MEM);
-	if (ptr == NULL) {
-		size_t bs;
-		void *addr;
+	if (ptr == NULL)
+		ptr = private_alloc_with_region(nsize);
 
-		bs = (nsize + BLOCK_REQ_SIZE - 1) / BLOCK_REQ_SIZE;
-		addr = axiom_request_private_region(bs);
-		if (addr != NULL) {
-			axiom_lmm_add_reg(&axiom_mem_hdlr.almm, addr, bs,
-					  AXIOM_PRIVATE_MEM,
-					  DEFAULT_PRIO);
-			ptr = axiom_lmm_alloc(&axiom_mem_hdlr.almm, nsize,
-					      AXIOM_PRIVATE_MEM);
-			*((size_t *) ptr) = nsize;
-			ptr = (void *)((uintptr_t)ptr + sizeof(size_t));
-		}
+	if (ptr != NULL)
+		ADJ_PTR_SIZE(ptr, nsize);
 
-	}
 	pthread_mutex_unlock(&axiom_mem_hdlr.mutex);
 
 	return ptr;
 }
 
+void axiom_free(void *ptr)
+{
+	char *p;
+
+	if (ptr == NULL) {
+		DBG("Nothing to free: pointer is null!\n");
+		return;
+	}
+
+	p = ((char *)ptr - sizeof(size_t));
+
+	pthread_mutex_lock(&axiom_mem_hdlr.mutex);
+
+	if (*(size_t *)p > 0) {
+		DBG("Freeing %zu bytes\n", *(size_t *)p);
+		axiom_lmm_free(&axiom_mem_hdlr.almm, p, *(size_t *)p);
+	} else {
+		DBG("Invalid size: %p %zu \n", p, *(size_t *)p);
+	}
+
+	pthread_mutex_unlock(&axiom_mem_hdlr.mutex);
+}
