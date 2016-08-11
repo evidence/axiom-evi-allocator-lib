@@ -8,7 +8,7 @@
 #define DEBUG
 #include <debug.h>
 
-int freelist_init(freelist_t *fl, int *idx_vec, int n_elem)
+int freeidx_list_init(freeidx_list_t *fl, int *idx_vec, int n_elem)
 {
 	int i;
 
@@ -30,19 +30,19 @@ int freelist_init(freelist_t *fl, int *idx_vec, int n_elem)
 	return FREELIST_OK;
 }
 
-freelist_t *freelist_init_from_buffer(void *buf, size_t buf_size)
+freeidx_list_t *freeidx_list_init_from_buffer(void *buf, size_t buf_size)
 {
-	freelist_t *res = NULL;
+	freeidx_list_t *res = NULL;
 	int *idx_vec;
 	int n_elem;
 
 	if (buf_size < sizeof(*res) + sizeof(*res->idx_vec)) {
-		DBG("Not enough room for freelist "
-		    "(freelist_t=%zu)\n", sizeof(*res));
+		DBG("Not enough room for freeidx_list "
+		    "(freeidx_list_t=%zu)\n", sizeof(*res));
 		return NULL;
 	}
 
-	res = (freelist_t *)buf;
+	res = (freeidx_list_t *)buf;
 	idx_vec = (int *)((uintptr_t)buf + sizeof(*res));
 	n_elem = (int)((uintptr_t)buf + buf_size - (uintptr_t)idx_vec)
 		      / sizeof(*res->idx_vec);
@@ -51,15 +51,15 @@ freelist_t *freelist_init_from_buffer(void *buf, size_t buf_size)
 	    buf_size, n_elem, FREELIST_SPACE(n_elem),
 	    buf_size - FREELIST_SPACE(n_elem));
 	DBG("res=%p idx_vec[%d] -> %p\n", res, n_elem, idx_vec);
-	DBG("sizeof(freelist_t)=%zu\n", sizeof(*res));
+	DBG("sizeof(freeidx_list_t)=%zu\n", sizeof(*res));
 
-	if (freelist_init(res, idx_vec, n_elem) != FREELIST_OK)
+	if (freeidx_list_init(res, idx_vec, n_elem) != FREELIST_OK)
 		return NULL;
 
 	return res;
 }
 
-int freelist_alloc_idx(freelist_t *fl)
+int freeidx_list_alloc_idx(freeidx_list_t *fl)
 {
 	int idx;
 
@@ -79,7 +79,7 @@ int freelist_alloc_idx(freelist_t *fl)
 	return idx;
 }
 
-int freelist_free_idx(freelist_t *fl, int idx)
+int freeidx_list_free_idx(freeidx_list_t *fl, int idx)
 {
 	if (idx < 0 || idx >= fl->n_elem) {
 		DBG("idx = %d\n", FREELIST_INVALID_IDX);
@@ -112,10 +112,10 @@ int freelist_free_idx(freelist_t *fl, int idx)
 	return FREELIST_OK;
 }
 
-int freelist_elem_for_memblock(size_t mem_size, size_t elem_size)
+int freeidx_list_elem_for_memblock(size_t mem_size, size_t elem_size)
 {
-	freelist_t *fl;
+	freeidx_list_t *fl;
 
-	return (mem_size - sizeof(freelist_t))
+	return (mem_size - sizeof(freeidx_list_t))
 		/ (elem_size + sizeof(fl->free_p));
 }
