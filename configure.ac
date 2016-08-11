@@ -38,6 +38,21 @@ DX_INIT_DOXYGEN([$PACKAGE_NAME],[docs/doxygen.cfg],[docs/output])
 
 # Checks for libraries.
 
+
+######################################################################
+# axiom-dev-mem header file
+######################################################################
+AXIOM_MEM_DEV_INC="/usr/include"
+
+AC_ARG_WITH([axiom-mem-dev],
+           AS_HELP_STRING([--with-axiom-mem-dev=dir], [Include directory fo axiom-mem-dev]),
+           [
+                AXIOM_MEM_DEV_INC="$withval"
+           ]
+)
+AC_SUBST([AXIOM_MEM_DEV_INC])
+
+
 # Checks for header files.
 AC_CHECK_HEADERS([stddef.h stdint.h])
 
