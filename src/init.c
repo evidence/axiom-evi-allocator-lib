@@ -42,6 +42,11 @@ static inline int is_mergeable_address(axiom_lmm_t *lmm, axiom_region_desc_t *r)
 	return !!res;
 }
 
+/**
+ * \brief Initialize axiom list memory manager handler
+ *
+ * \param lmm   Handler to initialize
+ */
 int axiom_lmm_init(axiom_lmm_t *lmm)
 {
 	int n_elem;
@@ -178,6 +183,18 @@ static inline axiom_region_desc_t *get_region_pool(axiom_lmm_t *lmm)
 	return rp;
 }
 
+/**
+ * \brief Adds a memory region to the pool of the passed hanlder
+ *
+ * \param lmm     Memory region pool handler
+ * \param addr    Start virtual address of the memory region
+ * \param size    Size of the memory region
+ * \param flags   Memory region bitmap flags
+ * \param prio    Priority of the memory region inside the memory region pool
+ *
+ * \return        AXIOM_LMM_OK if the memory region is successfully added,
+ *                otherwise an AXIOM_LMM_* error \see axiom_err.h
+ */
 int axiom_lmm_add_reg(axiom_lmm_t *lmm, void *addr, size_t size,
 		      axiom_region_flags_t flags, axiom_region_prio_t prio)
 {
@@ -387,6 +404,16 @@ static void axiom_lmm_free_in_region(struct axiom_region_desc *reg,
 	}
 }
 
+/**
+ * \brief Free a memory block
+ *
+ * \param lmm     Memory region pool handler
+ * \param block   Virtual address of the memory block
+ * \param size    Size of the memory block to free
+ *
+ * \return        AXIOM_LMM_OK if the memory region is successfully added,
+ *                otherwise an AXIOM_LMM_* error \see axiom_err.h
+ */
 int axiom_lmm_free(axiom_lmm_t *lmm, void *block, size_t size)
 {
 	struct axiom_region_desc *reg;
@@ -521,6 +548,20 @@ static void *axiom_lmm_alloc_find_node(struct axiom_region_desc *reg,
 	return NULL;
 }
 
+/**
+ * \brief Allocates memory
+ *
+ * \param lmm     The memory pool where to allocate.
+ * \param size    Size of needed memory.
+ * \param flags   The memory type required for this allocation. For each bit set
+ *                in the flags parameter, the corresponding bit in a region's
+ *                flags word must also be set in order for the region to be
+ *                considered for allocation. If the flags parameter is zero,
+ *                memory will be allocated from any region.
+ *
+ * \return        Returns a pointer to the allocated memory or NULL
+ *                if there is no avalilable memory block.
+ */
 void *axiom_lmm_alloc(axiom_lmm_t *lmm, size_t size, axiom_region_flags_t flags)
 {
 	struct axiom_region_desc *reg;
@@ -713,6 +754,25 @@ void *axiom_lmm_alloc_gen(axiom_lmm_t *lmm, size_t size,
 	return NULL;
 }
 
+/**
+ * \brief Allocates aligned memory block
+ *
+ * \param lmm     The memory pool where to allocate.
+ * \param size    Size of needed memory.
+ * \param flags   The memory type required for this allocation. For each bit set
+ *                in the flags parameter, the corresponding bit in a region's
+ *                flags word must also be set in order for the region to be
+ *                considered for allocation. If the flags parameter is zero,
+ *                memory will be allocated from any region.
+ * \param align_bits The number of low bits of the returned memory block address
+ *                   that must match the corresponding bits in align_ofs.
+ * \param align_ofs  The required offset from natural power-of-two alignment.
+ *                   The returned memory block will be aligned on a
+ *                   2^align_bits + align_ofs boundary.
+ *
+ * \return        Returns a pointer to the allocated memory or NULL
+ *                if there is no available memory.
+ */
 void *axiom_lmm_alloc_aligned(axiom_lmm_t *lmm, size_t size,
 			      axiom_region_flags_t flags, int align_bits,
 			      uintptr_t align_ofs)
@@ -784,6 +844,20 @@ int axiom_lmm_add_free(axiom_lmm_t *lmm, void *block, size_t size)
 }
 #endif
 
+/**
+ * \brief Adds a memory region to the pool of the passed hanlder.
+ *        \see axiom_lmm_add_reg
+ *
+ * \param lmm     Memory region pool handler
+ * \param region  Pointer to a user region memory descriptor
+ * \param addr    Start virtual address of the memory region
+ * \param size    Size of the memory region
+ * \param flags   Memory region bitmap flags
+ * \param prio    Priority of the memory region inside the memory region pool
+ *
+ * \return        AXIOM_LMM_OK if the memory region is successfully added,
+ *                otherwise an AXIOM_LMM_* error \see axiom_err.h
+ */
 int axiom_lmm_add_region(axiom_lmm_t *lmm, axiom_region_desc_t *region,
 			  void *addr, size_t size, axiom_region_flags_t flags,
 			  axiom_region_prio_t prio)
