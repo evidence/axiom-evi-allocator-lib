@@ -6,11 +6,14 @@
 #define FREELIST_INVALID_ARGS  -100
 
 typedef struct freelist_s {
+	/** First free index */
 	int free_p;
 #ifdef FREELIST_USED_LIST_EN
 	int used_p;
 #endif
+	/** Number of indexes in this free index list */
 	int n_elem;
+	/** Vector of indexes */
 	int *idx_vec;
 } freelist_t;
 

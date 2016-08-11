@@ -7,28 +7,40 @@
 typedef uint32_t axiom_lmm_flags_t;
 typedef int      axiom_lmm_pri_t;
 
+/** \brief Free list node */
 struct axiom_lmm_node {
+	/** Next free list node */
 	struct axiom_lmm_node *next;
+	/** Size of the free area */
 	size_t size;
 };
 
+/** \brief Region descriptor */
 typedef struct axiom_lmm_region {
+	/** Pointer to the following region */
 	struct axiom_lmm_region *next;
 	
 	/** List of free memory blocks in this region. */
 	struct axiom_lmm_node *nodes;
 
-	uintptr_t start; /** Start address of the region */
-	uintptr_t end;   /** End address of the region */
+	/** Start address of the region */
+	uintptr_t start;
+	/** End address of the region */
+	uintptr_t end;
 
-	axiom_lmm_flags_t flags; /** region attribute */
-	axiom_lmm_pri_t prio; /** allocation priority */
+	/** Region attribute */
+	axiom_lmm_flags_t flags;
+	/** Region allocation priority */
+	axiom_lmm_pri_t prio;
 
-	size_t free; /** free space in this region */
+	/** Actual region free space */
+	size_t free;
 } axiom_lmm_region_t;
 
 typedef struct axiom_lmm {
+	/** List of registered regions */
 	axiom_lmm_region_t *regions;
+	/** Private buffer used to store "unnamed" regions */
 	char workspace[4096 - sizeof(axiom_lmm_region_t *)];
 } axiom_lmm_t;
 
