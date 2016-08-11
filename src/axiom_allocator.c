@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #include <pthread.h>
 #include <stdlib.h>
 #include <inttypes.h>
@@ -17,12 +21,25 @@
 
 #include <assert.h>
 
+/**
+ * \cond INTERNAL_MACRO
+ */
 #undef DEBUG
 #define DEBUG
+/**
+ * \endcond
+ */
+
 #include <debug.h>
 
+/**
+ * \cond INTERNAL_MACRO
+ */
 #define BLOCK_REQ_SIZE (128 * 1024 * 1024)
 #define DEFAULT_PRIO   (0)
+/**
+ * \endcond
+ */
 
 static struct axiom_allocator_s {
 	pthread_mutex_t mutex;
