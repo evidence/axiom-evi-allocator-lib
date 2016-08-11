@@ -11,7 +11,7 @@
 #include <axiom_lmm.h>
 #include <axiom_err.h>
 
-#include <freelist.h>
+#include <freeidx_list.h>
 
 /**
  * \cond INTERNAL_MACRO

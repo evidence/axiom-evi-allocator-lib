@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <inttypes.h>
 
-#include <freelist.h>
+#include <freeidx_list.h>
 
 int main()
 {

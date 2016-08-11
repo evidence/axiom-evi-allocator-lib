@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-#include <freelist.h>
+#include <freeidx_list.h>
 
 #define DEBUG
 #include <debug.h>
