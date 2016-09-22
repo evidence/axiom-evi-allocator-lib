@@ -728,6 +728,11 @@ int axiom_lmm_add_region(axiom_lmm_t *lmm, axiom_region_desc_t *region,
 	start = (start + AXIOM_LMM_ALIGN_MASK) & ~AXIOM_LMM_ALIGN_MASK;
 	end &= ~AXIOM_LMM_ALIGN_MASK;
 
+	DBG("size=%zu\n", size);
+	DBG("start = 0x%"PRIxPTR"\n", start);
+	DBG("end = 0x%"PRIxPTR"\n", end);
+	DBG("region = %p\n", region);
+
 	if (end <= start) {
 		DBG("invalid region 0x%"PRIxPTR" 0x%"PRIxPTR"\n",
 		    start, end);
