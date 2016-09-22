@@ -1,7 +1,15 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdlib.h>
+
+#include <axiom_lmm.h>
+
+
 #include <axiom_allocator.h>
+
+
+#include <inttypes.h>
 
 void hit_enter_string(char *s)
 {
@@ -21,9 +29,45 @@ int main()
 	int i;
 	size_t allocated_size = 0;
 	size_t want_size = 0;
+	int err;
 
-	axiom_allocator_init(vaddr_start, vaddr_end);
+	err = axiom_allocator_init(42, vaddr_start, vaddr_end, vaddr_start,
+				   vaddr_start + 1 * 1024 *1024);
+	if (err)
+		exit(EXIT_FAILURE);
+
 	hit_enter_string("After axiom_allocator_init");
+
+	{
+		struct range_s {
+			uintptr_t s;
+			uintptr_t e;
+		};
+		struct range_s add[] = {
+			{ 0x4000100000, 0x4000800000 },
+			{ 0x4030100000, 0x4030800000 },
+			{ 0x4010100000, 0x4010800000 },
+		};
+		struct range_s rem[] = {
+			{ 0x4000100000, 0x4000800000 },
+			{ 0x4010100000, 0x4010800000 },
+		};
+
+		int k;
+/* [0x4000000000, 0x4040000000] */
+/* 0x4000000000 => 0x40000000 */
+		for (k = 0; k < sizeof(add) /  sizeof(add[0]); ++k) {
+			err = add_region(add[k].s, add[k].e, 2, 0);
+			printf("[0x%"PRIxPTR" - 0x%"PRIxPTR"] err = %d\n",
+			       add[k].s, add[k].e, err);
+		}
+		for (k = 0; k < sizeof(rem) /  sizeof(rem[0]); ++k) {
+			err = rem_region(rem[k].s, rem[k].e);
+			printf("[0x%"PRIxPTR" - 0x%"PRIxPTR"] err = %d\n",
+			       rem[k].s, rem[k].e, err);
+		}
+	}
+	hit_enter_string("After add/remove");
 
 	p = axiom_private_malloc(4096);
 	printf("p: %p\n", p);
@@ -48,21 +92,22 @@ int main()
 	for (i = 0; i < ALLOC_TST_N; ++i) {
 		if (tst[i] != NULL) {
 			printf("Free[%d]: %p\n", i, tst[i]);
-			axiom_free(tst[i]);
+			axiom_private_free(tst[i]);
 		}
 	}
-	hit_enter_string("After loop of axiom_free");
+	hit_enter_string("After loop of axiom_private_free");
 
 	allp = axiom_private_malloc(allocated_size);
 	printf("allp: %p\n", allp);
 	hit_enter_string("After axiom_private_malloc");
 
-	axiom_free(allp);
+	axiom_private_free(allp);
 	{
 		size_t ss = vaddr_end - vaddr_start - 2 * 4096;
 		allp = axiom_private_malloc(ss);
-		printf("start memset\n", allp);
-		memset(allp, 0xAA , ss);
+		printf("start memset\n");
+		if (allp)
+			memset(allp, 0xAA , ss);
 		printf("allp: %p\n", allp);
 	}
 	hit_enter_string("After axiom_private_malloc");
