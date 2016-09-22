@@ -35,7 +35,7 @@ static void axiom_lmm_free_in_region(struct axiom_region_desc *reg,
 static inline axiom_region_desc_t *get_region_pool(axiom_lmm_t *lmm);
 static inline freeidx_list_t *get_freeidx_list(axiom_lmm_t *lmm);
 
-static inline int is_mergeable_address(axiom_lmm_t *lmm, axiom_region_desc_t *r)
+static inline int is_auto_region(axiom_lmm_t *lmm, axiom_region_desc_t *r)
 {
 	int res;
 	freeidx_list_t *fl = get_freeidx_list(lmm);
@@ -120,11 +120,11 @@ static int axiom_lmm_merge_region(axiom_lmm_t *lmm,
 		return -1;
 	}
 
-	if (!is_mergeable_address(lmm, tokeep)
-	    || !is_mergeable_address(lmm, tomerge)) {
+	if (!is_auto_region(lmm, tokeep)
+	    || !is_auto_region(lmm, tomerge)) {
 		DBG("No merge-able regions T:%d M:%d\n",
-		    is_mergeable_address(lmm, tokeep),
-		    is_mergeable_address(lmm, tomerge));
+		    is_auto_region(lmm, tokeep),
+		    is_auto_region(lmm, tomerge));
 		return 0;
 	}
 
