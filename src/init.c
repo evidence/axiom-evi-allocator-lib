@@ -279,9 +279,6 @@ static void axiom_lmm_free_in_region(struct axiom_region_desc *reg,
 
 	/* Record the newly freed space in the region's free space counter.  */
 	reg->free += size;
-//dump_region(reg);
-/*printf("F:%zu m:0x%"PRIxPTR" M:0x%"PRIxPTR" diff:%zu sz:%zu\n",
-	reg->free, reg->start, reg->end, reg->end - reg->start, size);*/
 	assert(reg->free <= reg->end - reg->start);
 
 	/* Now find the location in that region's free list
