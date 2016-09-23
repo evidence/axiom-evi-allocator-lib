@@ -14,7 +14,7 @@
  *
  * \return Return the error code of operation. (0 if everything is OK)
  */
-int axiom_allocator_init(int app_id, uintptr_t saddr, uintptr_t eaddr,
+int axiom_allocator_init(uintptr_t saddr, uintptr_t eaddr,
 			 uintptr_t priv_start, uintptr_t priv_end);
 
 /**

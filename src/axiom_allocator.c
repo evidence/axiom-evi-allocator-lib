@@ -117,12 +117,26 @@ extern unsigned long __ld_shm_info_end_addr;
 	return err;
 }
 
-int axiom_allocator_init(int app_id, uintptr_t saddr, uintptr_t eaddr,
+static int get_app_id()
+{
+	int app_id;
+	char *app_id_str;
+
+	app_id_str = getenv("AXIOM_APP_ID");
+	if (app_id_str == NULL)
+		return -1;
+
+	app_id = atoi(app_id_str);
+
+	return ((app_id < 0) ? -1 : app_id);
+}
+
+int axiom_allocator_init(uintptr_t saddr, uintptr_t eaddr,
 			 uintptr_t priv_start, uintptr_t priv_end)
 {
 	int err;
 	struct axiom_mem_dev_info request;
-	char *app_id_str;
+	int app_id;
 
 /*
         unsigned long *data_start_addr = (unsigned long *)&__ld_shm_info_start_addr;
@@ -132,22 +146,17 @@ int axiom_allocator_init(int app_id, uintptr_t saddr, uintptr_t eaddr,
         size_t size = eaddr - saddr;
 
 	err = axiom_lmm_init(&axiom_mem_hdlr.almm);
+	DBG("axiom_lmm_init returns %d\n", err);
 	assert(err == AXIOM_LMM_OK);
 
-	app_id_str = getenv("AXIOM_APP_ID");
-	if (app_id_str == NULL) {
-		DBG("AXIOM_APP_ID not found\n");
-		return -1;
-	}
-
-	app_id = atoi(app_id_str);
+	app_id = get_app_id();
 	if (app_id < 0) {
 		DBG("Invalid AXIOM_APP_ID\n");
 		return -1;
 	}
 
 	err = open("/dev/axiom_dev_mem0", O_RDWR);
-	DBG("open return %d\n", err);
+	DBG("open /dev/axiom_dev_mem0 returns %d\n", err);
 	assert(err >= 0);
 
 	axiom_mem_hdlr.mem_dev_fd = err;
@@ -169,9 +178,8 @@ int axiom_allocator_init(int app_id, uintptr_t saddr, uintptr_t eaddr,
 	if (err) {
 		perror("ioctl");
 		return err;
-	} else {
-		DBG("Config B:0x%lx S:%ld\n", request.base, request.size);
 	}
+	DBG("Config B:0x%lx S:%ld\n", request.base, request.size);
 
 	err = ioctl(axiom_mem_hdlr.mem_dev_fd, AXIOM_MEM_DEV_SET_APP_ID, &app_id);
 	if (err) {
