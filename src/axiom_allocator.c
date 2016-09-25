@@ -169,11 +169,12 @@ int axiom_allocator_init(uintptr_t saddr, uintptr_t eaddr,
 
 	request.base = saddr;
 	request.size = eaddr - saddr;
-
+#if 0
+	/* TODO: re-enable when using new linker script */
 	err = mprotect((void *)(saddr), size, PROT_NONE);
 	if (err)
 		return err;
-
+#endif
 	err = ioctl(axiom_mem_hdlr.mem_dev_fd, AXIOM_MEM_DEV_CONFIG_VMEM, &request);
 	if (err) {
 		perror("ioctl");
