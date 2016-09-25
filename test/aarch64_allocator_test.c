@@ -17,6 +17,22 @@ void hit_enter_string(char *s)
         getchar();
 }
 
+int get_app_id()
+{
+	int app_id;
+	char *app_id_str;
+
+	app_id_str = getenv("AXIOM_APP_ID");
+	if (app_id_str == NULL)
+		return -1;
+
+	app_id = atoi(app_id_str);
+
+	return ((app_id < 0) ? -1 : app_id);
+}
+
+#define MB_1 (1024 * 1024)
+
 int main()
 {
 #define ALLOC_TST_N  10
@@ -30,14 +46,25 @@ int main()
 	size_t allocated_size = 0;
 	size_t want_size = 0;
 	int err;
+	int app_id;
 
-	err = axiom_allocator_init(42, vaddr_start, vaddr_end, vaddr_start,
-				   vaddr_start + 1 * 1024 *1024);
-	if (err)
+	app_id = get_app_id();
+	if (app_id < 0) {
+		printf("Invalid AXIOM_APP_ID (=%d)\n", app_id);
 		exit(EXIT_FAILURE);
+	}
 
+	hit_enter_string("Before axiom_allocator_init");
+
+	err = axiom_allocator_init(vaddr_start, vaddr_end,
+				   vaddr_start + app_id * MB_1,
+				   vaddr_start + (app_id + 1) * MB_1);
+	if (err) {
+		printf("Error in axiom_allocator_init\n");
+		exit(EXIT_FAILURE);
+	}
 	hit_enter_string("After axiom_allocator_init");
-
+#if 0
 	{
 		struct range_s {
 			uintptr_t s;
@@ -66,13 +93,14 @@ int main()
 			printf("[0x%"PRIxPTR" - 0x%"PRIxPTR"] err = %d\n",
 			       rem[k].s, rem[k].e, err);
 		}
+		hit_enter_string("After add/remove");
 	}
-	hit_enter_string("After add/remove");
+#endif
 
 	p = axiom_private_malloc(4096);
 	printf("p: %p\n", p);
 	for (i = 0; i < 4096; ++i)
-		((char *)p)[i] = 0x42;
+		((char *)p)[i] = (char)app_id; /* 0x42; */
 	hit_enter_string("After axiom_private_malloc");
 
 	for (i = 0; i < ALLOC_TST_N; ++i) {
