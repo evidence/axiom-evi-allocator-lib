@@ -63,6 +63,7 @@ extern unsigned long __ld_shm_info_end_addr;
 	int err;
 	int fd = axiom_mem_hdlr.mem_dev_fd;
         void *mem = (void *)saddr;
+	/* void *mapped_addr;*/
 
         DBG("Request region [0x%"PRIxPTR"] [0x%"PRIxPTR"]\n", saddr, eaddr);
 	request.base = saddr;
@@ -74,12 +75,22 @@ extern unsigned long __ld_shm_info_end_addr;
 		perror("ioctl");
 		return err;
 	}
-
+#if 0
+#if 1
 	err = mprotect(mem, request.size, PROT_WRITE | PROT_READ);
 	if (err) {
 		perror("mprotect");
 		return err;
 	}
+#else
+	mapped_addr = mmap((void *)saddr, request.size, PROT_WRITE | PROT_READ,
+			   MAP_SHARED | MAP_LOCKED | MAP_FIXED, fd, 0);
+	if (mapped_addr == MAP_FAILED) {
+		perror("mmap");
+		return -1;
+	}
+#endif
+#endif
 	err = axiom_lmm_add_reg(&axiom_mem_hdlr.almm, (void *)saddr,
 				request.size, flags, prio);
 
