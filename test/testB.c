@@ -5,7 +5,8 @@
 #include <axiom_lmm.h>
 #include <axiom_err.h>
 
-void *print_alloc(char *vn, axiom_lmm_t *lmm, size_t size, axiom_lmm_flags_t flags)
+void *print_alloc(char *vn, axiom_lmm_t *lmm, size_t size,
+		  axiom_region_flags_t flags)
 {
 	void *p;
 
@@ -43,10 +44,10 @@ void print_free(char *vn, void *p, axiom_lmm_t *lmm, size_t size)
 int main()
 {
 	axiom_lmm_t almm;
-	axiom_lmm_region_t areg1;
-	axiom_lmm_region_t areg2;
-	axiom_lmm_region_t areg3;
-	axiom_lmm_region_t areg4;
+	axiom_region_desc_t areg1;
+	axiom_region_desc_t areg2;
+	axiom_region_desc_t areg3;
+	axiom_region_desc_t areg4;
 	int i;
 	int err;
 
@@ -58,6 +59,7 @@ int main()
 	size_t sz;
 
 	axiom_lmm_init(&almm);
+	printf("sizeof(axiom_region_desc_t)=%zu\n", sizeof(axiom_region_desc_t));
 
 	for (i = 0; i < REGION_NUMS; ++i) {
 		uintptr_t t;
