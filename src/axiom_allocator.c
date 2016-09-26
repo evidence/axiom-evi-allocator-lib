@@ -56,7 +56,7 @@ extern unsigned long __ld_shm_info_start_addr;
 extern unsigned long __ld_shm_info_end_addr;
 */
 
-/*static*/ int add_region(uintptr_t saddr, uintptr_t eaddr,
+static int add_region(uintptr_t saddr, uintptr_t eaddr,
 		      axiom_region_flags_t flags, axiom_region_prio_t prio)
 {
         struct axiom_mem_dev_info request;
@@ -98,8 +98,9 @@ extern unsigned long __ld_shm_info_end_addr;
 
 	return err;
 }
+
 /* Dangerous do not use*/
-/*static*/ int rem_region(uintptr_t saddr, uintptr_t eaddr)
+static int rem_region(uintptr_t saddr, uintptr_t eaddr)
 {
         struct axiom_mem_dev_info request;
 	int err;

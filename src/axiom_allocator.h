@@ -61,10 +61,4 @@ void axiom_shared_free(void *ptr);
 
 /** \} */
 
-/*TODO: remove only for tests */
-int add_region(uintptr_t saddr, uintptr_t eaddr,
-	       axiom_region_flags_t flags, axiom_region_prio_t prio);
-
-/*static*/ int rem_region(uintptr_t saddr, uintptr_t eaddr);
-
 #endif /* AXIOM_ALLOCATOR_H*/
