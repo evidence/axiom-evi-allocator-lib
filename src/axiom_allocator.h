@@ -11,11 +11,13 @@
  *
  * \param saddr virtual address start of the allocator
  * \param eaddr virtual address end of the allocator
+ * \param psaddr virtual address start of the private memory
+ * \param peaddr virtual address end of the private memory
  *
  * \return Return the error code of operation. (0 if everything is OK)
  */
 int axiom_allocator_init(uintptr_t saddr, uintptr_t eaddr,
-			 uintptr_t priv_start, uintptr_t priv_end);
+			 uintptr_t psaddr, uintptr_t peaddr);
 
 /**
  * \brief Allocate memory of sz bytes int the private region
@@ -25,7 +27,6 @@ int axiom_allocator_init(uintptr_t saddr, uintptr_t eaddr,
  * \return Return the pointer of the allocated memory. NULL in case of error.
  */
 void *axiom_private_malloc(size_t sz);
-
 
 /**
  * \brief Allocate memory of sz bytes in the private region

@@ -144,7 +144,7 @@ static int get_app_id()
 }
 
 int axiom_allocator_init(uintptr_t saddr, uintptr_t eaddr,
-			 uintptr_t priv_start, uintptr_t priv_end)
+			 uintptr_t psaddr, uintptr_t peaddr)
 {
 	int err;
 	struct axiom_mem_dev_info request;
@@ -200,7 +200,7 @@ int axiom_allocator_init(uintptr_t saddr, uintptr_t eaddr,
 		return err;
 	}
 
-	err = add_region(priv_start, priv_end, AXIOM_PRIVATE_MEM, DEFAULT_PRIO);
+	err = add_region(psaddr, peaddr, AXIOM_PRIVATE_MEM, DEFAULT_PRIO);
 	DBG("add_private_region err = %d\n", err);
 
 	return err;
