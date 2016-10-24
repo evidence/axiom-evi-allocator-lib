@@ -69,7 +69,8 @@ int evi_lmm_init(evi_lmm_t *lmm)
 	}
 
 	DBG("elem=%d\n", n_elem);
-	fl = freeidx_list_init_from_buffer(lmm->workspace, FREELIST_SPACE(n_elem));
+	fl = freeidx_list_init_from_buffer(lmm->workspace,
+					   FREELIST_SPACE(n_elem));
 	if (fl == NULL) {
 		DBG("No room for %d region descriptors\n", n_elem);
 		return EVI_LMM_INVALID_MEM_DESC;
@@ -84,7 +85,7 @@ int evi_lmm_init(evi_lmm_t *lmm)
 
 static inline void dump_region(struct evi_region_desc *r)
 {
-	fprintf(stderr, "R:%p prio:%d m:0x%"PRIxPTR" M:0x%"PRIxPTR" sz:%zu"\
+	fprintf(stderr, "R:%p prio:%d m:0x%"PRIxPTR" M:0x%"PRIxPTR" sz:%zu"
 		" F:%zu diff:%zu nodes:%p\n",
 		r, r->prio, r->start, r->end, r->end - r->start,
 		r->free, (r->end - r->start), r->nodes);
@@ -94,8 +95,8 @@ static inline void dump_region(struct evi_region_desc *r)
  * \cond INTERNAL_MACRO
  */
 #define container_of(ptr, type, member) ({                        \
-	const typeof( ((type *)0)->member ) *member_ptr = (ptr);  \
-	(type *)( (char *)member_ptr - offsetof(type,member) );})
+	const typeof(((type *)0)->member) *member_ptr = (ptr);  \
+	(type *)((char *)member_ptr - offsetof(type, member)); })
 /**
  * \endcond
  */
@@ -136,7 +137,8 @@ static int evi_lmm_merge_region(evi_lmm_t *lmm,
 		tokeep->free += tomerge->free;
 		tokeep->next = tomerge->next;
 
-		for (n = tokeep->nodes; n->next != NULL; n = n->next) ;
+		for (n = tokeep->nodes; n->next != NULL; n = n->next)
+			;
 		assert(n != NULL);
 
 		if ((uintptr_t)n + n->size == (uintptr_t)tomerge->nodes) {
@@ -145,7 +147,8 @@ static int evi_lmm_merge_region(evi_lmm_t *lmm,
 			freeidx_list_t *fl = get_freeidx_list(lmm);
 
 			/* last free zone of tokeep is contiguous with the
-			 * first free zone of tomerge. */
+			 * first free zone of tomerge.
+			 */
 			n->size += tomerge->nodes->size;
 			n->next = tomerge->nodes->next;
 			DBG("Merged NODES (%zu)\n", tomerge->nodes->size);
@@ -233,22 +236,23 @@ void evi_lmm_dump(evi_lmm_t *lmm)
 
 	fprintf(stderr, "%s(lmm=%p)\n", __func__, lmm);
 
-	for (reg = lmm->regions; reg; reg = reg->next)
-	{
+	for (reg = lmm->regions; reg; reg = reg->next) {
 		struct evi_freelist_node *node;
 		size_t free_check;
 
-		fprintf(stderr, " region %08lx-%08lx size=%zu flags=%08lx pri=%d free=%zu\n",
+		fprintf(stderr,
+		" region %08lx-%08lx size=%zu flags=%08lx pri=%d free=%zu\n",
 			reg->start, reg->end, reg->end - reg->start,
 			(unsigned long)reg->flags, reg->prio, reg->free);
 
 		/* CHECKREGPTR(reg); */
 
 		free_check = 0;
-		for (node = reg->nodes; node; node = node->next)
-		{
-			fprintf(stderr, "  node %p-0x%08"PRIxPTR" size=%zu next=%p\n",
-				node, (uintptr_t)node + node->size, node->size, node->next);
+		for (node = reg->nodes; node; node = node->next) {
+			fprintf(stderr,
+				"  node %p-0x%08"PRIxPTR" size=%zu next=%p\n",
+				node, (uintptr_t)node + node->size, node->size,
+				node->next);
 
 			assert(((uintptr_t)node & EVI_LMM_ALIGN_MASK) == 0);
 			assert((node->size & EVI_LMM_ALIGN_MASK) == 0);
@@ -270,7 +274,7 @@ static void evi_lmm_free_in_region(struct evi_region_desc *reg,
 				     void *block, size_t size)
 {
 	struct evi_freelist_node *prevnode, *nextnode;
-	struct evi_freelist_node *node = (struct evi_freelist_node*)
+	struct evi_freelist_node *node = (struct evi_freelist_node *)
 				((uintptr_t)block & ~EVI_LMM_ALIGN_MASK);
 
 	size = (((uintptr_t)block & EVI_LMM_ALIGN_MASK) + size
@@ -282,7 +286,8 @@ static void evi_lmm_free_in_region(struct evi_region_desc *reg,
 	assert(reg->free <= reg->end - reg->start);
 
 	/* Now find the location in that region's free list
-	   at which to add the node.  */
+	 * at which to add the node.
+	 */
 	for (prevnode = 0, nextnode = reg->nodes;
 	     (nextnode != 0) && (nextnode < node);
 	     prevnode = nextnode, nextnode = nextnode->next);
@@ -301,7 +306,8 @@ static void evi_lmm_free_in_region(struct evi_region_desc *reg,
 			prevnode->next = nextnode->next;
 		} else {
 			/* Not possible -
-			   just grow prevnode around newly freed memory.  */
+			 * just grow prevnode around newly freed memory.
+			 */
 			prevnode->size += size;
 		}
 	} else {
@@ -336,7 +342,7 @@ static void evi_lmm_free_in_region(struct evi_region_desc *reg,
 int evi_lmm_free(evi_lmm_t *lmm, void *block, size_t size)
 {
 	struct evi_region_desc *reg;
-	struct evi_freelist_node *node = (struct evi_freelist_node*)
+	struct evi_freelist_node *node = (struct evi_freelist_node *)
 				((uintptr_t)block & ~EVI_LMM_ALIGN_MASK);
 	/*struct evi_freelist_node *prevnode, *nextnode;*/
 
@@ -349,8 +355,7 @@ int evi_lmm_free(evi_lmm_t *lmm, void *block, size_t size)
 		return EVI_LMM_INVALID_SIZE;
 
 	/* First find the region to add this block to.  */
-	for (reg = lmm->regions; ; reg = reg->next)
-	{
+	for (reg = lmm->regions; ; reg = reg->next) {
 		if (reg == 0)
 			return EVI_LMM_INVALID_BLOCK;
 
@@ -387,8 +392,8 @@ static void *evi_lmm_alloc_find_node(struct evi_region_desc *reg,
 			struct evi_freelist_node *newnode;
 
 			/* Split the node and return its head */
-			newnode = (struct evi_freelist_node*)
-					((void*)node + size);
+			newnode = (struct evi_freelist_node *)
+					((void *)node + size);
 			newnode->next = node->next;
 			newnode->size = node->size - size;
 			*nodep = newnode;
@@ -401,7 +406,7 @@ static void *evi_lmm_alloc_find_node(struct evi_region_desc *reg,
 		assert(reg->free >= size);
 		reg->free -= size;
 
-		return (void*)node;
+		return (void *)node;
 	}
 
 	return NULL;
@@ -430,8 +435,7 @@ void *evi_lmm_alloc(evi_lmm_t *lmm, size_t size, evi_region_flags_t flags)
 
 	size = (size + EVI_LMM_ALIGN_MASK) & ~EVI_LMM_ALIGN_MASK;
 
-	for (reg = lmm->regions; reg; reg = reg->next)
-	{
+	for (reg = lmm->regions; reg; reg = reg->next) {
 		void *addr;
 
 		/*TODO:*/
@@ -453,8 +457,7 @@ size_t evi_lmm_avail(evi_lmm_t *lmm, evi_region_flags_t flags)
 	struct evi_region_desc *reg;
 	size_t avail = 0;
 
-	for (reg = lmm->regions; reg; reg = reg->next)
-	{
+	for (reg = lmm->regions; reg; reg = reg->next) {
 		/*TODO:*/
 		/*CHECKREGPTR(reg);*/
 
@@ -475,6 +478,7 @@ static inline uintptr_t evi_lmm_adjust_align(uintptr_t addr, int align_bits,
 
 	for (i = 0; i < align_bits; i++) {
 		uintptr_t bit = (uintptr_t)1 << i;
+
 		if ((addr ^ align_ofs) & bit)
 			addr += bit;
 	}
@@ -520,14 +524,13 @@ void *evi_lmm_alloc_gen(evi_lmm_t *lmm, size_t size,
 	assert(lmm != 0);
 	assert(size > 0);
 
-	for (reg = lmm->regions; reg; reg = reg->next)
-	{
+	for (reg = lmm->regions; reg; reg = reg->next) {
 		struct evi_freelist_node **nodep, *node;
 
 		/*TODO:*/
 		/* CHECKREGPTR(reg); */
 
-		/* First trivially reject the entire region if possible.  */
+		/* First trivially reject the entire region if possible. */
 		if ((flags & ~reg->flags)
 		    || (reg->start >= in_max)
 		    || (reg->end <= in_min))
@@ -539,17 +542,20 @@ void *evi_lmm_alloc_gen(evi_lmm_t *lmm, size_t size,
 
 			node = *nodep;
 			assert(((uintptr_t)node & EVI_LMM_ALIGN_MASK) == 0);
-			assert(((uintptr_t)node->size & EVI_LMM_ALIGN_MASK) == 0);
+			assert(((uintptr_t)node->size
+			       & EVI_LMM_ALIGN_MASK) == 0);
 			assert((node->next == 0) || (node->next > node));
 			assert((uintptr_t)node < reg->end);
 
 			/* Now make a first-cut trivial elimination check
-			   to skip chunks that are _definitely_ too small.  */
+			 * to skip chunks that are _definitely_ too small.
+			 */
 			if (node->size < size)
 				continue;
 
 			/* Now compute the address at which
-			   the allocated chunk would have to start.  */
+			 * the allocated chunk would have to start.
+			 */
 			addr = (uintptr_t)node;
 			if (addr < in_min)
 				addr = in_min;
@@ -557,25 +563,29 @@ void *evi_lmm_alloc_gen(evi_lmm_t *lmm, size_t size,
 						      align_ofs);
 
 			/* See if the block at the adjusted address
-			   is still entirely within the node.  */
+			 * is still entirely within the node.
+			 */
 			if ((addr - (uintptr_t)node + size) > node->size)
 				continue;
 
 			/* If the block extends past the range constraint,
-			   then all of the rest of the nodes in this region
-			   will extend past it too, so stop here. */
+			 * then all of the rest of the nodes in this region
+			 * will extend past it too, so stop here.
+			 */
 			if (addr + size > in_max)
 				break;
 
 			/* OK, we can allocate the block from this node.  */
 
 			/* If the allocation leaves at least EVI_LMM_ALIGN_SIZE
-			   space before it, then split the node.  */
-			anode = (struct evi_freelist_node*)(addr & ~EVI_LMM_ALIGN_MASK);
+			 * space before it, then split the node.
+			 */
+			anode = (struct evi_freelist_node *)
+				 (addr & ~EVI_LMM_ALIGN_MASK);
 			assert(anode >= node);
 			if (anode > node) {
 				size_t split_size = (uintptr_t)anode
-				                  - (uintptr_t)node;
+						    - (uintptr_t)node;
 				assert((split_size & EVI_LMM_ALIGN_MASK) == 0);
 				anode->next = node->next;
 				anode->size = node->size - split_size;
@@ -584,16 +594,18 @@ void *evi_lmm_alloc_gen(evi_lmm_t *lmm, size_t size,
 			}
 
 			/* Now use the first part of the anode
-			   to satisfy the allocation,
-			   splitting off the tail end if necessary.  */
-			size = ((addr & EVI_LMM_ALIGN_MASK) + size + EVI_LMM_ALIGN_MASK)
+			 * to satisfy the allocation,
+			 * splitting off the tail end if necessary.
+			 */
+			size = ((addr & EVI_LMM_ALIGN_MASK) + size
+			       + EVI_LMM_ALIGN_MASK)
 				& ~EVI_LMM_ALIGN_MASK;
 			if (anode->size > size) {
 				struct evi_freelist_node *newnode;
 
 				/* Split the node and return its head.  */
-				newnode = (struct evi_freelist_node*)
-						((void*)anode + size);
+				newnode = (struct evi_freelist_node *)
+						((void *)anode + size);
 				newnode->next = anode->next;
 				newnode->size = anode->size - size;
 				*nodep = newnode;
@@ -606,7 +618,7 @@ void *evi_lmm_alloc_gen(evi_lmm_t *lmm, size_t size,
 			assert(reg->free >= size);
 			reg->free -= size;
 
-			return ((void*)addr);
+			return ((void *)addr);
 		}
 	}
 
@@ -653,10 +665,11 @@ int evi_lmm_add_free(evi_lmm_t *lmm, void *block, size_t size)
 	int err;
 
 	/* Restrict the min and max further to be properly aligned.
-	   Note that this is the opposite of what lmm_free() does,
-	   because lmm_free() assumes the block was allocated with lmm_alloc()
-	   and thus would be a subset of a larger, already-aligned free block.
-	   Here we can assume no such thing.  */
+	 * Note that this is the opposite of what lmm_free() does,
+	 * because lmm_free() assumes the block was allocated with lmm_alloc()
+	 * and thus would be a subset of a larger, already-aligned free block.
+	 * Here we can assume no such thing.
+	 */
 	min = (min + EVI_LMM_ALIGN_MASK) & ~EVI_LMM_ALIGN_MASK;
 	max &= ~EVI_LMM_ALIGN_MASK;
 
@@ -668,21 +681,21 @@ int evi_lmm_add_free(evi_lmm_t *lmm, void *block, size_t size)
 		return EVI_LMM_OK;
 
 	/* Add the block to the free list(s) of whatever region(s) it overlaps.
-	   If some or all of the block doesn't fall into any existing region,
-	   then that memory is simply dropped on the floor.  */
-	for (reg = lmm->regions; reg; reg = reg->next)
-	{
+	 * If some or all of the block doesn't fall into any existing region,
+	 * then that memory is simply dropped on the floor.
+	 */
+	for (reg = lmm->regions; reg; reg = reg->next) {
 		if (reg->start >= reg->end
 		    || (reg->start & EVI_LMM_ALIGN_MASK)
 		    || (reg->end & EVI_LMM_ALIGN_MASK))
 			return EVI_LMM_INVALID_REGION;
 
-		if ((max > reg->start) && (min < reg->end))
-		{
+		if ((max > reg->start) && (min < reg->end)) {
 			uintptr_t new_min = min, new_max = max;
 
 			/* Only add the part of the block
-			   that actually falls within this region.  */
+			 * that actually falls within this region.
+			 */
 			if (new_min < reg->start)
 				new_min = reg->start;
 			if (new_max > reg->end)
@@ -692,7 +705,7 @@ int evi_lmm_add_free(evi_lmm_t *lmm, void *block, size_t size)
 				return EVI_LMM_INVALID_REGION;
 
 			/* Add the block.  */
-			err = evi_lmm_free(lmm, (void*)new_min,
+			err = evi_lmm_free(lmm, (void *)new_min,
 					     new_max - new_min);
 			if (err)
 				return err;
@@ -787,6 +800,7 @@ int evi_lmm_add_region(evi_lmm_t *lmm, evi_region_desc_t *region,
 		DBG("Added as LAST element\n");
 	} else {
 		struct evi_region_desc *reg = region->next;
+
 		DBG("Added before %p\n", reg);
 		evi_lmm_merge_region(lmm, region, reg);
 	}

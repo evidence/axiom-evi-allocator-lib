@@ -37,8 +37,8 @@ freeidx_list_t *freeidx_list_init_from_buffer(void *buf, size_t buf_size)
 	int n_elem;
 
 	if (buf_size < sizeof(*res) + sizeof(*res->idx_vec)) {
-		DBG("Not enough room for freeidx_list "
-		    "(freeidx_list_t=%zu)\n", sizeof(*res));
+		DBG("Not enough room for freeidx_list (freeidx_list_t=%zu)\n",
+		    sizeof(*res));
 		return NULL;
 	}
 
@@ -47,7 +47,7 @@ freeidx_list_t *freeidx_list_init_from_buffer(void *buf, size_t buf_size)
 	n_elem = (int)((uintptr_t)buf + buf_size - (uintptr_t)idx_vec)
 		      / sizeof(*res->idx_vec);
 
-	DBG("buf=%p s:%zu (n_elem=%d, estimate=%zu, wasted=%zu) \n", buf,
+	DBG("buf=%p s:%zu (n_elem=%d, estimate=%zu, wasted=%zu)\n", buf,
 	    buf_size, n_elem, FREELIST_SPACE(n_elem),
 	    buf_size - FREELIST_SPACE(n_elem));
 	DBG("res=%p idx_vec[%d] -> %p\n", res, n_elem, idx_vec);
@@ -75,7 +75,7 @@ int freeidx_list_alloc_idx(freeidx_list_t *fl)
 	fl->idx_vec[idx] = FREELIST_INVALID_IDX;
 #endif
 	DBG("idx = %d\n", idx);
-	
+
 	return idx;
 }
 
@@ -108,7 +108,7 @@ int freeidx_list_free_idx(freeidx_list_t *fl, int idx)
 	fl->idx_vec[idx] = fl->free_p;
 	fl->free_p = idx;
 	DBG("idx = %d\n", idx);
-	
+
 	return FREELIST_OK;
 }
 
