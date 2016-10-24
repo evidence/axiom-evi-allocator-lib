@@ -51,22 +51,22 @@ static struct evi_allocator_s {
 	evi_lmm_t almm;
 } evi_mem_hdlr = { PTHREAD_MUTEX_INITIALIZER, };
 
-/*
+#if 0
 extern unsigned long __ld_shm_info_start_addr;
 extern unsigned long __ld_shm_info_end_addr;
-*/
+#endif
 
 static int add_region(uintptr_t saddr, uintptr_t eaddr,
 		      evi_region_flags_t flags, evi_region_prio_t prio)
 {
-        struct axiom_mem_dev_info request;
+	struct axiom_mem_dev_info request;
 	int err;
 	int fd = evi_mem_hdlr.mem_dev_fd;
 
-        DBG("Request region [0x%"PRIxPTR"] [0x%"PRIxPTR"]\n", saddr, eaddr);
+	DBG("Request region [0x%"PRIxPTR"] [0x%"PRIxPTR"]\n", saddr, eaddr);
 	request.base = saddr;
-        request.size = eaddr - saddr;
-        DBG("Request region b:%ld s:%ld\n", request.base, request.size);
+	request.size = eaddr - saddr;
+	DBG("Request region b:%ld s:%ld\n", request.base, request.size);
 
 	err = ioctl(fd, AXIOM_MEM_DEV_RESERVE_MEM, &request);
 	if (err != 0) {
@@ -85,10 +85,10 @@ static int add_region(uintptr_t saddr, uintptr_t eaddr,
 /* Dangerous do not use*/
 static int rem_region(uintptr_t saddr, uintptr_t eaddr)
 {
-        struct axiom_mem_dev_info request;
+	struct axiom_mem_dev_info request;
 	int err;
 	int fd = evi_mem_hdlr.mem_dev_fd;
-        void *mem = (void *)saddr;
+	void *mem = (void *)saddr;
 
 	DBG("Request region [0x%"PRIxPTR"] [0x%"PRIxPTR"]\n", saddr, eaddr);
 	request.base = saddr;
@@ -96,7 +96,6 @@ static int rem_region(uintptr_t saddr, uintptr_t eaddr)
 	DBG("Request region b:%ld s:%ld\n", request.base, request.size);
 
 	/*TODO: remove region inside lmm */
-
 	err = ioctl(fd, AXIOM_MEM_DEV_REVOKE_MEM, &request);
 	if (err != 0) {
 		perror("ioctl");
@@ -127,18 +126,21 @@ static int get_app_id(void)
 }
 
 int evi_allocator_init(uintptr_t saddr, uintptr_t eaddr,
-			 uintptr_t psaddr, uintptr_t peaddr)
+		       uintptr_t psaddr, uintptr_t peaddr)
 {
 	int err;
 	struct axiom_mem_dev_info request;
 	int app_id;
+	uintptr_t vaddr_start = (uintptr_t)0x4000000000;
+	uintptr_t vaddr_end = (uintptr_t)0x4040000000;
 
-/*
-        unsigned long *data_start_addr = (unsigned long *)&__ld_shm_info_start_addr;
-        unsigned long *data_end_addr = (unsigned long *)&__ld_shm_info_end_addr;
-        size_t size = *data_end_addr - *data_start_addr;
-*/
-        size_t size = eaddr - saddr;
+#if 0
+	unsigned long *data_start_addr =
+				     (unsigned long *)&__ld_shm_info_start_addr;
+	unsigned long *data_end_addr = (unsigned long *)&__ld_shm_info_end_addr;
+	size_t size = *data_end_addr - *data_start_addr;
+#endif
+	size_t size = vaddr_end - vaddr_start;
 
 	err = evi_lmm_init(&evi_mem_hdlr.almm);
 	DBG("evi_lmm_init returns %d\n", err);
@@ -156,21 +158,22 @@ int evi_allocator_init(uintptr_t saddr, uintptr_t eaddr,
 
 	evi_mem_hdlr.mem_dev_fd = err;
 
-        DBG("addr = 0x%"PRIxPTR"\n", saddr);
-        DBG("size = %zd\n", size);
+	DBG("addr = 0x%"PRIxPTR"\n", saddr);
+	DBG("size = %zd\n", size);
 
-	evi_mem_hdlr.vaddr_start = saddr;
-	evi_mem_hdlr.vaddr_end = eaddr;
+	evi_mem_hdlr.vaddr_start = vaddr_start;
+	evi_mem_hdlr.vaddr_end = vaddr_end;
 
-	request.base = saddr;
-	request.size = eaddr - saddr;
+	request.base = vaddr_start;
+	request.size = vaddr_end - vaddr_start;
 #if 0
 	/* TODO: re-enable when using new linker script */
-	err = mprotect((void *)(saddr), size, PROT_NONE);
+	err = mprotect((void *)(vaddr_start), size, PROT_NONE);
 	if (err)
 		return err;
 #endif
-	err = ioctl(evi_mem_hdlr.mem_dev_fd, AXIOM_MEM_DEV_CONFIG_VMEM, &request);
+	err = ioctl(evi_mem_hdlr.mem_dev_fd, AXIOM_MEM_DEV_CONFIG_VMEM,
+		    &request);
 	if (err) {
 		perror("ioctl");
 		return err;
@@ -185,6 +188,10 @@ int evi_allocator_init(uintptr_t saddr, uintptr_t eaddr,
 
 	err = add_region(psaddr, peaddr, EVI_PRIVATE_MEM, DEFAULT_PRIO);
 	DBG("add_private_region err = %d\n", err);
+	if (!err) {
+		err = add_region(saddr, eaddr, EVI_SHARE_MEM, DEFAULT_PRIO);
+		DBG("add_shared_region err = %d\n", err);
+	}
 
 	return err;
 }
@@ -192,30 +199,30 @@ int evi_allocator_init(uintptr_t saddr, uintptr_t eaddr,
 #if 0
 static void *evi_request_private_region(unsigned long size)
 {
-        struct axiom_mem_dev_info request;
-        unsigned long start_addr = (unsigned long)(evi_mem_hdlr.vaddr_start);
-        void *mem;
-        int err;
+	struct axiom_mem_dev_info request;
+	unsigned long start_addr = (unsigned long)(evi_mem_hdlr.vaddr_start);
+	void *mem;
+	int err;
 	int fd = evi_mem_hdlr.mem_dev_fd;
 
-        request.size = size;
+	request.size = size;
 
-        err = ioctl(fd, AXIOM_MEM_DEV_PRIVATE_ALLOC, &request);
-        if (err) {
-                perror("ioctl");
-                return NULL;
-        }
+	err = ioctl(fd, AXIOM_MEM_DEV_PRIVATE_ALLOC, &request);
+	if (err) {
+		perror("ioctl");
+		return NULL;
+	}
 
-        DBG("request B:0x%lx S:%ld\n", request.base, request.size);
+	DBG("request B:0x%lx S:%ld\n", request.base, request.size);
 
-        mem = (void *)(start_addr + request.base);
-        DBG("protect B:%p S:%ld\n", mem, request.size);
-        if (mprotect(mem, request.size, PROT_WRITE | PROT_READ)) {
-                perror("mprotect");
-                return NULL;
-        }
+	mem = (void *)(start_addr + request.base);
+	DBG("protect B:%p S:%ld\n", mem, request.size);
+	if (mprotect(mem, request.size, PROT_WRITE | PROT_READ)) {
+		perror("mprotect");
+		return NULL;
+	}
 
-        return mem;
+	return mem;
 }
 #endif
 
@@ -266,15 +273,18 @@ void *evi_private_malloc(size_t sz)
 	return ptr;
 }
 
+#if 0
 static void *request_shared_memory(size_t sz)
 {
 	void *ptr;
 
 	/* TODO: to ask shared block to the server */
+	/* TODO: probably better in the glue code ?!?! */
 	ptr = evi_lmm_alloc(&evi_mem_hdlr.almm, sz, EVI_SHARE_MEM);
 
 	return ptr;
 }
+#endif
 
 void *evi_shared_malloc(size_t sz)
 {
@@ -283,7 +293,7 @@ void *evi_shared_malloc(size_t sz)
 
 	pthread_mutex_lock(&evi_mem_hdlr.mutex);
 	ptr = evi_lmm_alloc(&evi_mem_hdlr.almm, nsize, EVI_SHARE_MEM);
-
+#if 0
 	if (ptr == NULL)
 		ptr = request_shared_memory(nsize);
 
@@ -291,7 +301,7 @@ void *evi_shared_malloc(size_t sz)
 		*((size_t *) ptr) = nsize;
 		ptr = (void *)((uintptr_t)ptr + sizeof(size_t));
 	}
-
+#endif
 	pthread_mutex_unlock(&evi_mem_hdlr.mutex);
 
 	return ptr;
@@ -328,7 +338,7 @@ static void evi_free(void *ptr)
 		DBG("Freeing %zu bytes\n", *(size_t *)p);
 		evi_lmm_free(&evi_mem_hdlr.almm, p, *(size_t *)p);
 	} else {
-		DBG("Invalid size: %p %zu \n", p, *(size_t *)p);
+		DBG("Invalid size: %p %zu\n", p, *(size_t *)p);
 	}
 
 	pthread_mutex_unlock(&evi_mem_hdlr.mutex);
