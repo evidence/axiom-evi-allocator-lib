@@ -112,7 +112,7 @@ static int rem_region(uintptr_t saddr, uintptr_t eaddr)
 	return err;
 }
 
-static int get_app_id()
+static int get_app_id(void)
 {
 	int app_id;
 	char *app_id_str;
