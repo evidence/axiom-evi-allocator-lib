@@ -60,6 +60,13 @@ void evi_private_free(void *ptr);
  */
 void evi_shared_free(void *ptr);
 
+/**
+ * \brief Add a new region to the pool of shared memory regions
+ *
+ * \param addr  address of the new shared region
+ * \param len   size of the new shared region
+ */
+int evi_add_shared_region(uintptr_t addr, size_t len);
 /** \} */
 
 #endif /* EVI_ALLOCATOR_H*/

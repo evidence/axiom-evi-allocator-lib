@@ -297,6 +297,20 @@ void *evi_shared_malloc(size_t sz)
 	return ptr;
 }
 
+int evi_add_shared_region(uintptr_t saddr, size_t len)
+{
+	uintptr_t eaddr = saddr + len;
+	int err;
+
+	pthread_mutex_lock(&evi_mem_hdlr.mutex);
+	err = add_region(saddr, eaddr, EVI_SHARE_MEM, DEFAULT_PRIO);
+	pthread_mutex_unlock(&evi_mem_hdlr.mutex);
+
+	DBG("add_shared_region err = %d\n", err);
+
+	return err;
+}
+
 static void evi_free(void *ptr)
 {
 	char *p;
