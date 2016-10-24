@@ -3,10 +3,10 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <axiom_lmm.h>
+#include <evi_lmm.h>
 
 
-#include <axiom_allocator.h>
+#include <evi_allocator.h>
 
 
 #include <inttypes.h>
@@ -54,26 +54,26 @@ int main()
 		exit(EXIT_FAILURE);
 	}
 
-	hit_enter_string("Before axiom_allocator_init");
+	hit_enter_string("Before evi_allocator_init");
 
-	err = axiom_allocator_init(vaddr_start, vaddr_end,
-				   vaddr_start + app_id * MB_1,
-				   vaddr_start + (app_id + 1) * MB_1);
+	err = evi_allocator_init(vaddr_start, vaddr_end,
+				 vaddr_start + app_id * MB_1,
+				 vaddr_start + (app_id + 1) * MB_1);
 	if (err) {
-		printf("Error in axiom_allocator_init\n");
+		printf("Error in evi_allocator_init\n");
 		exit(EXIT_FAILURE);
 	}
-	hit_enter_string("After axiom_allocator_init");
+	hit_enter_string("After evi_allocator_init");
 
-	p = axiom_private_malloc(4096);
+	p = evi_private_malloc(4096);
 	printf("p: %p\n", p);
 	for (i = 0; i < 4096; ++i)
 		((char *)p)[i] = (char)app_id; /* 0x42; */
-	hit_enter_string("After axiom_private_malloc");
+	hit_enter_string("After evi_private_malloc");
 
 	for (i = 0; i < ALLOC_TST_N; ++i) {
 		char *pend = NULL;
-		tst[i] = axiom_private_malloc(ALLOC_TST_SZ);
+		tst[i] = evi_private_malloc(ALLOC_TST_SZ);
 		if (tst[i] != NULL) {
 			allocated_size += ALLOC_TST_SZ;
 			memset(tst[i], 0x43 + i, ALLOC_TST_SZ);
@@ -83,30 +83,30 @@ int main()
 		printf("Alloc[%d]: %p %p\n", i, tst[i], pend);
 	}
 	printf("want size: %zu got size: %zu\n", want_size, allocated_size);
-	hit_enter_string("After loop of axiom_private_malloc");
+	hit_enter_string("After loop of evi_private_malloc");
 
 	for (i = 0; i < ALLOC_TST_N; ++i) {
 		if (tst[i] != NULL) {
 			printf("Free[%d]: %p\n", i, tst[i]);
-			axiom_private_free(tst[i]);
+			evi_private_free(tst[i]);
 		}
 	}
-	hit_enter_string("After loop of axiom_private_free");
+	hit_enter_string("After loop of evi_private_free");
 
-	allp = axiom_private_malloc(allocated_size);
+	allp = evi_private_malloc(allocated_size);
 	printf("allp: %p\n", allp);
-	hit_enter_string("After axiom_private_malloc");
+	hit_enter_string("After evi_private_malloc");
 
-	axiom_private_free(allp);
+	evi_private_free(allp);
 	{
 		size_t ss = vaddr_end - vaddr_start - 2 * 4096;
-		allp = axiom_private_malloc(ss);
+		allp = evi_private_malloc(ss);
 		printf("start memset\n");
 		if (allp)
 			memset(allp, 0xAA , ss);
 		printf("allp: %p\n", allp);
 	}
-	hit_enter_string("After axiom_private_malloc");
+	hit_enter_string("After evi_private_malloc");
 
 	return 0;
 }

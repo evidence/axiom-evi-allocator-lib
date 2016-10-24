@@ -1,0 +1,81 @@
+#ifndef EVI_LMM_H
+#define EVI_LMM_H
+
+#include <stdint.h>
+#include <stddef.h>
+
+typedef uint32_t evi_region_flags_t;
+typedef int      evi_region_prio_t;
+
+/** \brief Free list node */
+struct evi_freelist_node {
+	/** Next free list node */
+	struct evi_freelist_node *next;
+	/** Size of the free area */
+	size_t size;
+};
+
+/** \brief Region descriptor */
+typedef struct evi_region_desc {
+	/** Pointer to the following region */
+	struct evi_region_desc *next;
+	
+	/** List of free memory blocks in this region. */
+	struct evi_freelist_node *nodes;
+
+	/** Start address of the region */
+	uintptr_t start;
+	/** End address of the region */
+	uintptr_t end;
+
+	/** Region attribute */
+	evi_region_flags_t flags;
+	/** Region allocation priority */
+	evi_region_prio_t prio;
+
+	/** Actual region free space */
+	size_t free;
+} evi_region_desc_t;
+
+typedef struct evi_lmm {
+	/** List of registered regions */
+	evi_region_desc_t *regions;
+	/** Private buffer used to store "unnamed" regions */
+	char workspace[4096 - sizeof(evi_region_desc_t *)];
+} evi_lmm_t;
+
+/* TODO: check power of 2???*/
+#define EVI_LMM_ALIGN_SIZE      sizeof(struct evi_freelist_node)
+#define EVI_LMM_ALIGN_MASK      (EVI_LMM_ALIGN_SIZE - 1)
+
+#define EVI_PRIVATE_MEM         1
+#define EVI_SHARE_MEM           2
+
+int evi_lmm_init(evi_lmm_t *lmm);
+int evi_lmm_add_region(evi_lmm_t *lmm, evi_region_desc_t *region,
+			 void *addr, size_t size, evi_region_flags_t flags,
+			 evi_region_prio_t prio);
+
+int evi_lmm_free(evi_lmm_t *lmm, void *block, size_t size);
+void *evi_lmm_alloc(evi_lmm_t *lmm, size_t size, evi_region_flags_t flags);
+size_t evi_lmm_avail(evi_lmm_t *lmm, evi_region_flags_t flags);
+void *evi_lmm_alloc_gen(evi_lmm_t *lmm, size_t size,
+			  evi_region_flags_t flags, int align_bits,
+			  uintptr_t align_ofs, uintptr_t in_min,
+			  size_t in_size);
+
+void evi_lmm_dump_regions(evi_lmm_t *lmm);
+void evi_lmm_dump(evi_lmm_t *lmm);
+
+int evi_lmm_add_reg(evi_lmm_t *lmm, void *addr, size_t size,
+		    evi_region_flags_t flags, evi_region_prio_t prio);
+
+#define REMOVED_API
+#undef REMOVED_API
+
+#ifdef REMOVED_API
+/*REMOVED API*/
+int evi_lmm_add_free(evi_lmm_t *lmm, void *block, size_t size);
+#endif
+
+#endif /* EVI_LMM_H */

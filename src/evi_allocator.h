@@ -1,8 +1,8 @@
-#ifndef AXIOM_ALLOCATOR_H
-#define AXIOM_ALLOCATOR_H
+#ifndef EVI_ALLOCATOR_H
+#define EVI_ALLOCATOR_H
 
 /**
- * \defgroup AXIOM_ALLOCATOR
+ * \defgroup EVI_ALLOCATOR
  *
  * \{
  */
@@ -16,7 +16,7 @@
  *
  * \return Return the error code of operation. (0 if everything is OK)
  */
-int axiom_allocator_init(uintptr_t saddr, uintptr_t eaddr,
+int evi_allocator_init(uintptr_t saddr, uintptr_t eaddr,
 			 uintptr_t psaddr, uintptr_t peaddr);
 
 /**
@@ -26,7 +26,7 @@ int axiom_allocator_init(uintptr_t saddr, uintptr_t eaddr,
  *
  * \return Return the pointer of the allocated memory. NULL in case of error.
  */
-void *axiom_private_malloc(size_t sz);
+void *evi_private_malloc(size_t sz);
 
 /**
  * \brief Allocate memory of sz bytes in the private region
@@ -35,7 +35,7 @@ void *axiom_private_malloc(size_t sz);
  *
  * \return Return the pointer of the allocated memory. NULL in case of error.
  */
-void *axiom_private_malloc(size_t sz);
+void *evi_private_malloc(size_t sz);
 
 /**
  * \brief Allocate memory of sz bytes in the shared region
@@ -44,22 +44,22 @@ void *axiom_private_malloc(size_t sz);
  *
  * \return Return the pointer of the allocated memory. NULL in case of error.
  */
-void *axiom_shared_malloc(size_t sz);
+void *evi_shared_malloc(size_t sz);
 
 /**
  * \brief Free a previous allocated memory in the private region
  *
  * \param ptr  Pointer to the memory to free
  */
-void axiom_private_free(void *ptr);
+void evi_private_free(void *ptr);
 
 /**
  * \brief Free a previous allocated memory in the shared region
  *
  * \param ptr  Pointer to the memory to free
  */
-void axiom_shared_free(void *ptr);
+void evi_shared_free(void *ptr);
 
 /** \} */
 
-#endif /* AXIOM_ALLOCATOR_H*/
+#endif /* EVI_ALLOCATOR_H*/

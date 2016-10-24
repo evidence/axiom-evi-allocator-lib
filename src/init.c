@@ -8,8 +8,8 @@
 
 #include <assert.h>
 
-#include <axiom_lmm.h>
-#include <axiom_err.h>
+#include <evi_lmm.h>
+#include <evi_err.h>
 
 #include <freeidx_list.h>
 
@@ -24,23 +24,23 @@
 #include <debug.h>
 
 /**
- * \defgroup AXIOM_LMM
+ * \defgroup EVI_LMM
  *
  * \{
  */
 
-static void axiom_lmm_free_in_region(struct axiom_region_desc *reg,
-				     void *block, size_t size);
+static void evi_lmm_free_in_region(struct evi_region_desc *reg,
+				   void *block, size_t size);
 
-static inline axiom_region_desc_t *get_region_pool(axiom_lmm_t *lmm);
-static inline freeidx_list_t *get_freeidx_list(axiom_lmm_t *lmm);
+static inline evi_region_desc_t *get_region_pool(evi_lmm_t *lmm);
+static inline freeidx_list_t *get_freeidx_list(evi_lmm_t *lmm);
 
-static inline int is_auto_region(axiom_lmm_t *lmm, axiom_region_desc_t *r)
+static inline int is_auto_region(evi_lmm_t *lmm, evi_region_desc_t *r)
 {
 	int res;
 	freeidx_list_t *fl = get_freeidx_list(lmm);
 	uintptr_t start = (uintptr_t)get_region_pool(lmm);
-	uintptr_t end = start + fl->n_elem * sizeof(axiom_region_desc_t);
+	uintptr_t end = start + fl->n_elem * sizeof(evi_region_desc_t);
 	uintptr_t ra = (uintptr_t)r;
 
 	res = (start <= ra) && (ra < end);
@@ -53,36 +53,36 @@ static inline int is_auto_region(axiom_lmm_t *lmm, axiom_region_desc_t *r)
  *
  * \param lmm   Handler to initialize
  */
-int axiom_lmm_init(axiom_lmm_t *lmm)
+int evi_lmm_init(evi_lmm_t *lmm)
 {
 	int n_elem;
-	axiom_region_desc_t *region_pool;
+	evi_region_desc_t *region_pool;
 	freeidx_list_t *fl;
 
 	lmm->regions = NULL;
 
 	n_elem = freeidx_list_elem_for_memblock(sizeof(lmm->workspace),
-						sizeof(axiom_region_desc_t));
+						sizeof(evi_region_desc_t));
 	if (n_elem <= 0) {
 		DBG("No room for region descriptors (%d <= 0!)\n", n_elem);
-		return AXIOM_LMM_INVALID_MEM_DESC;
+		return EVI_LMM_INVALID_MEM_DESC;
 	}
 
 	DBG("elem=%d\n", n_elem);
 	fl = freeidx_list_init_from_buffer(lmm->workspace, FREELIST_SPACE(n_elem));
 	if (fl == NULL) {
 		DBG("No room for %d region descriptors\n", n_elem);
-		return AXIOM_LMM_INVALID_MEM_DESC;
+		return EVI_LMM_INVALID_MEM_DESC;
 	}
 
 	region_pool = get_region_pool(lmm);
 	fl = get_freeidx_list(lmm);
 	DBG("WS:%p fl:%p rp:%p\n", lmm->workspace, fl, region_pool);
 
-	return AXIOM_LMM_OK;
+	return EVI_LMM_OK;
 }
 
-static inline void dump_region(struct axiom_region_desc *r)
+static inline void dump_region(struct evi_region_desc *r)
 {
 	fprintf(stderr, "R:%p prio:%d m:0x%"PRIxPTR" M:0x%"PRIxPTR" sz:%zu"\
 		" F:%zu diff:%zu nodes:%p\n",
@@ -100,9 +100,9 @@ static inline void dump_region(struct axiom_region_desc *r)
  * \endcond
  */
 
-static int axiom_lmm_merge_region(axiom_lmm_t *lmm,
-				  axiom_region_desc_t *tokeep,
-				  axiom_region_desc_t *tomerge)
+static int evi_lmm_merge_region(evi_lmm_t *lmm,
+				evi_region_desc_t *tokeep,
+				evi_region_desc_t *tomerge)
 {
 	DBG("Comparing K:%p M:%p\n", tokeep, tomerge);
 	DBG("K:%p s:0x%"PRIxPTR" - e:0x%"PRIxPTR"\n",
@@ -129,7 +129,7 @@ static int axiom_lmm_merge_region(axiom_lmm_t *lmm,
 	}
 
 	if (tokeep->end == tomerge->start) {
-		struct axiom_freelist_node *n;
+		struct evi_freelist_node *n;
 
 		DBG("Can be merged\n");
 		tokeep->end = tomerge->end;
@@ -141,7 +141,7 @@ static int axiom_lmm_merge_region(axiom_lmm_t *lmm,
 
 		if ((uintptr_t)n + n->size == (uintptr_t)tomerge->nodes) {
 			int idx;
-			axiom_region_desc_t *region_pool = get_region_pool(lmm);
+			evi_region_desc_t *region_pool = get_region_pool(lmm);
 			freeidx_list_t *fl = get_freeidx_list(lmm);
 
 			/* last free zone of tokeep is contiguous with the
@@ -170,19 +170,19 @@ static int axiom_lmm_merge_region(axiom_lmm_t *lmm,
 	return 0;
 }
 
-static inline freeidx_list_t *get_freeidx_list(axiom_lmm_t *lmm)
+static inline freeidx_list_t *get_freeidx_list(evi_lmm_t *lmm)
 {
 	freeidx_list_t *fl = (freeidx_list_t *)(lmm->workspace);
 	return fl;
 }
 
-static inline axiom_region_desc_t *get_region_pool(axiom_lmm_t *lmm)
+static inline evi_region_desc_t *get_region_pool(evi_lmm_t *lmm)
 {
-	axiom_region_desc_t *rp;
+	evi_region_desc_t *rp;
 	freeidx_list_t *fl = get_freeidx_list(lmm);
 
-	rp = (axiom_region_desc_t *)((uintptr_t)&(lmm->workspace[0])
-				     + FREELIST_SPACE(fl->n_elem));
+	rp = (evi_region_desc_t *)((uintptr_t)&(lmm->workspace[0])
+				   + FREELIST_SPACE(fl->n_elem));
 
 	return rp;
 }
@@ -196,29 +196,29 @@ static inline axiom_region_desc_t *get_region_pool(axiom_lmm_t *lmm)
  * \param flags   Memory region bitmap flags
  * \param prio    Priority of the memory region inside the memory region pool
  *
- * \return        AXIOM_LMM_OK if the memory region is successfully added,
- *                otherwise an AXIOM_LMM_* error \see axiom_err.h
+ * \return        EVI_LMM_OK if the memory region is successfully added,
+ *                otherwise an EVI_LMM_* error \see evi_err.h
  */
-int axiom_lmm_add_reg(axiom_lmm_t *lmm, void *addr, size_t size,
-		      axiom_region_flags_t flags, axiom_region_prio_t prio)
+int evi_lmm_add_reg(evi_lmm_t *lmm, void *addr, size_t size,
+		    evi_region_flags_t flags, evi_region_prio_t prio)
 {
-	axiom_region_desc_t *region;
+	evi_region_desc_t *region;
 	freeidx_list_t *fl = get_freeidx_list(lmm);
-	axiom_region_desc_t *region_pool = get_region_pool(lmm);
+	evi_region_desc_t *region_pool = get_region_pool(lmm);
 	int idx = freeidx_list_alloc_idx(fl);
 
 	if (idx == FREELIST_INVALID_IDX)
-		return AXIOM_LMM_INVALID_MEM_DESC;
+		return EVI_LMM_INVALID_MEM_DESC;
 
 	region = &(region_pool[idx]);
 
-	return axiom_lmm_add_region(lmm, region, addr, size, flags, prio);
+	return evi_lmm_add_region(lmm, region, addr, size, flags, prio);
 }
 
-void axiom_lmm_dump_regions(axiom_lmm_t *lmm)
+void evi_lmm_dump_regions(evi_lmm_t *lmm)
 {
 	int cnt = 0;
-	struct axiom_region_desc *r;
+	struct evi_region_desc *r;
 
 	for (r = lmm->regions; r; r = r->next) {
 		dump_region(r);
@@ -227,15 +227,15 @@ void axiom_lmm_dump_regions(axiom_lmm_t *lmm)
 	fprintf(stderr, "Num regions: %d\n", cnt);
 }
 
-void axiom_lmm_dump(axiom_lmm_t *lmm)
+void evi_lmm_dump(evi_lmm_t *lmm)
 {
-	struct axiom_region_desc *reg;
+	struct evi_region_desc *reg;
 
 	fprintf(stderr, "%s(lmm=%p)\n", __func__, lmm);
 
 	for (reg = lmm->regions; reg; reg = reg->next)
 	{
-		struct axiom_freelist_node *node;
+		struct evi_freelist_node *node;
 		size_t free_check;
 
 		fprintf(stderr, " region %08lx-%08lx size=%zu flags=%08lx pri=%d free=%zu\n",
@@ -250,8 +250,8 @@ void axiom_lmm_dump(axiom_lmm_t *lmm)
 			fprintf(stderr, "  node %p-0x%08"PRIxPTR" size=%zu next=%p\n",
 				node, (uintptr_t)node + node->size, node->size, node->next);
 
-			assert(((uintptr_t)node & AXIOM_LMM_ALIGN_MASK) == 0);
-			assert((node->size & AXIOM_LMM_ALIGN_MASK) == 0);
+			assert(((uintptr_t)node & EVI_LMM_ALIGN_MASK) == 0);
+			assert((node->size & EVI_LMM_ALIGN_MASK) == 0);
 			assert(node->size >= sizeof(*node));
 			assert((node->next == 0) || (node->next > node));
 			assert((uintptr_t)node < reg->end);
@@ -266,16 +266,16 @@ void axiom_lmm_dump(axiom_lmm_t *lmm)
 	fprintf(stderr, "%s done\n", __func__);
 }
 
-static void axiom_lmm_free_in_region(struct axiom_region_desc *reg,
+static void evi_lmm_free_in_region(struct evi_region_desc *reg,
 				     void *block, size_t size)
 {
-	struct axiom_freelist_node *prevnode, *nextnode;
-	struct axiom_freelist_node *node = (struct axiom_freelist_node*)
-				((uintptr_t)block & ~AXIOM_LMM_ALIGN_MASK);
+	struct evi_freelist_node *prevnode, *nextnode;
+	struct evi_freelist_node *node = (struct evi_freelist_node*)
+				((uintptr_t)block & ~EVI_LMM_ALIGN_MASK);
 
-	size = (((uintptr_t)block & AXIOM_LMM_ALIGN_MASK) + size
-		+ AXIOM_LMM_ALIGN_MASK)
-		& ~AXIOM_LMM_ALIGN_MASK;
+	size = (((uintptr_t)block & EVI_LMM_ALIGN_MASK) + size
+		+ EVI_LMM_ALIGN_MASK)
+		& ~EVI_LMM_ALIGN_MASK;
 
 	/* Record the newly freed space in the region's free space counter.  */
 	reg->free += size;
@@ -330,29 +330,29 @@ static void axiom_lmm_free_in_region(struct axiom_region_desc *reg,
  * \param block   Virtual address of the memory block
  * \param size    Size of the memory block to free
  *
- * \return        AXIOM_LMM_OK if the memory region is successfully added,
- *                otherwise an AXIOM_LMM_* error \see axiom_err.h
+ * \return        EVI_LMM_OK if the memory region is successfully added,
+ *                otherwise an EVI_LMM_* error \see evi_err.h
  */
-int axiom_lmm_free(axiom_lmm_t *lmm, void *block, size_t size)
+int evi_lmm_free(evi_lmm_t *lmm, void *block, size_t size)
 {
-	struct axiom_region_desc *reg;
-	struct axiom_freelist_node *node = (struct axiom_freelist_node*)
-				((uintptr_t)block & ~AXIOM_LMM_ALIGN_MASK);
-	/*struct axiom_freelist_node *prevnode, *nextnode;*/
+	struct evi_region_desc *reg;
+	struct evi_freelist_node *node = (struct evi_freelist_node*)
+				((uintptr_t)block & ~EVI_LMM_ALIGN_MASK);
+	/*struct evi_freelist_node *prevnode, *nextnode;*/
 
 	assert(lmm != 0);
 	if (lmm == NULL)
-		return AXIOM_LMM_INVALID_MEM_DESC;
+		return EVI_LMM_INVALID_MEM_DESC;
 	if (block == NULL)
-		return AXIOM_LMM_INVALID_BLOCK;
+		return EVI_LMM_INVALID_BLOCK;
 	if (size <= 0)
-		return AXIOM_LMM_INVALID_SIZE;
+		return EVI_LMM_INVALID_SIZE;
 
 	/* First find the region to add this block to.  */
 	for (reg = lmm->regions; ; reg = reg->next)
 	{
 		if (reg == 0)
-			return AXIOM_LMM_INVALID_BLOCK;
+			return EVI_LMM_INVALID_BLOCK;
 
 		/* TODO: */
 		/*CHECKREGPTR(reg);*/
@@ -362,21 +362,21 @@ int axiom_lmm_free(axiom_lmm_t *lmm, void *block, size_t size)
 			break;
 	}
 
-	axiom_lmm_free_in_region(reg, block, size);
+	evi_lmm_free_in_region(reg, block, size);
 
-	return AXIOM_LMM_OK;
+	return EVI_LMM_OK;
 }
 
-static void *axiom_lmm_alloc_find_node(struct axiom_region_desc *reg,
+static void *evi_lmm_alloc_find_node(struct evi_region_desc *reg,
 				       size_t size)
 {
-	struct axiom_freelist_node **nodep, *node;
+	struct evi_freelist_node **nodep, *node;
 
 	for (nodep = &reg->nodes; *nodep != 0; nodep = &node->next) {
 		node = *nodep;
 
-		assert(((uintptr_t)node & AXIOM_LMM_ALIGN_MASK) == 0);
-		assert((node->size & AXIOM_LMM_ALIGN_MASK) == 0);
+		assert(((uintptr_t)node & EVI_LMM_ALIGN_MASK) == 0);
+		assert((node->size & EVI_LMM_ALIGN_MASK) == 0);
 		assert((node->next == 0) || (node->next > node));
 		assert((uintptr_t)node < reg->end);
 
@@ -384,10 +384,10 @@ static void *axiom_lmm_alloc_find_node(struct axiom_region_desc *reg,
 			continue;
 
 		if (node->size > size) {
-			struct axiom_freelist_node *newnode;
+			struct evi_freelist_node *newnode;
 
 			/* Split the node and return its head */
-			newnode = (struct axiom_freelist_node*)
+			newnode = (struct evi_freelist_node*)
 					((void*)node + size);
 			newnode->next = node->next;
 			newnode->size = node->size - size;
@@ -421,14 +421,14 @@ static void *axiom_lmm_alloc_find_node(struct axiom_region_desc *reg,
  * \return        Returns a pointer to the allocated memory or NULL
  *                if there is no avalilable memory block.
  */
-void *axiom_lmm_alloc(axiom_lmm_t *lmm, size_t size, axiom_region_flags_t flags)
+void *evi_lmm_alloc(evi_lmm_t *lmm, size_t size, evi_region_flags_t flags)
 {
-	struct axiom_region_desc *reg;
+	struct evi_region_desc *reg;
 
 	if (lmm == NULL || size <= 0)
 		return NULL;
 
-	size = (size + AXIOM_LMM_ALIGN_MASK) & ~AXIOM_LMM_ALIGN_MASK;
+	size = (size + EVI_LMM_ALIGN_MASK) & ~EVI_LMM_ALIGN_MASK;
 
 	for (reg = lmm->regions; reg; reg = reg->next)
 	{
@@ -440,7 +440,7 @@ void *axiom_lmm_alloc(axiom_lmm_t *lmm, size_t size, axiom_region_flags_t flags)
 		if (flags & ~reg->flags)
 			continue;
 
-		addr = axiom_lmm_alloc_find_node(reg, size);
+		addr = evi_lmm_alloc_find_node(reg, size);
 		if (addr != NULL)
 			return addr;
 	}
@@ -448,9 +448,9 @@ void *axiom_lmm_alloc(axiom_lmm_t *lmm, size_t size, axiom_region_flags_t flags)
 	return NULL;
 }
 
-size_t axiom_lmm_avail(axiom_lmm_t *lmm, axiom_region_flags_t flags)
+size_t evi_lmm_avail(evi_lmm_t *lmm, evi_region_flags_t flags)
 {
-	struct axiom_region_desc *reg;
+	struct evi_region_desc *reg;
 	size_t avail = 0;
 
 	for (reg = lmm->regions; reg; reg = reg->next)
@@ -468,8 +468,8 @@ size_t axiom_lmm_avail(axiom_lmm_t *lmm, axiom_region_flags_t flags)
 	return avail;
 }
 
-static inline uintptr_t axiom_lmm_adjust_align(uintptr_t addr, int align_bits,
-					       uintptr_t align_ofs)
+static inline uintptr_t evi_lmm_adjust_align(uintptr_t addr, int align_bits,
+					     uintptr_t align_ofs)
 {
 	int i;
 
@@ -509,20 +509,20 @@ static inline uintptr_t axiom_lmm_adjust_align(uintptr_t addr, int align_bits,
  *                if there is no memory block that satisfy all of the specified
  *                constraints.
  */
-void *axiom_lmm_alloc_gen(axiom_lmm_t *lmm, size_t size,
-			  axiom_region_flags_t flags, int align_bits,
-			  uintptr_t align_ofs, uintptr_t in_min,
-			  size_t in_size)
+void *evi_lmm_alloc_gen(evi_lmm_t *lmm, size_t size,
+			evi_region_flags_t flags, int align_bits,
+			uintptr_t align_ofs, uintptr_t in_min,
+			size_t in_size)
 {
 	uintptr_t in_max = in_min + in_size;
-	struct axiom_region_desc *reg;
+	struct evi_region_desc *reg;
 
 	assert(lmm != 0);
 	assert(size > 0);
 
 	for (reg = lmm->regions; reg; reg = reg->next)
 	{
-		struct axiom_freelist_node **nodep, *node;
+		struct evi_freelist_node **nodep, *node;
 
 		/*TODO:*/
 		/* CHECKREGPTR(reg); */
@@ -535,11 +535,11 @@ void *axiom_lmm_alloc_gen(axiom_lmm_t *lmm, size_t size,
 
 		for (nodep = &reg->nodes; *nodep != 0; nodep = &node->next) {
 			uintptr_t addr;
-			struct axiom_freelist_node *anode;
+			struct evi_freelist_node *anode;
 
 			node = *nodep;
-			assert(((uintptr_t)node & AXIOM_LMM_ALIGN_MASK) == 0);
-			assert(((uintptr_t)node->size & AXIOM_LMM_ALIGN_MASK) == 0);
+			assert(((uintptr_t)node & EVI_LMM_ALIGN_MASK) == 0);
+			assert(((uintptr_t)node->size & EVI_LMM_ALIGN_MASK) == 0);
 			assert((node->next == 0) || (node->next > node));
 			assert((uintptr_t)node < reg->end);
 
@@ -553,7 +553,7 @@ void *axiom_lmm_alloc_gen(axiom_lmm_t *lmm, size_t size,
 			addr = (uintptr_t)node;
 			if (addr < in_min)
 				addr = in_min;
-			addr = axiom_lmm_adjust_align(addr, align_bits,
+			addr = evi_lmm_adjust_align(addr, align_bits,
 						      align_ofs);
 
 			/* See if the block at the adjusted address
@@ -569,14 +569,14 @@ void *axiom_lmm_alloc_gen(axiom_lmm_t *lmm, size_t size,
 
 			/* OK, we can allocate the block from this node.  */
 
-			/* If the allocation leaves at least AXIOM_LMM_ALIGN_SIZE
+			/* If the allocation leaves at least EVI_LMM_ALIGN_SIZE
 			   space before it, then split the node.  */
-			anode = (struct axiom_freelist_node*)(addr & ~AXIOM_LMM_ALIGN_MASK);
+			anode = (struct evi_freelist_node*)(addr & ~EVI_LMM_ALIGN_MASK);
 			assert(anode >= node);
 			if (anode > node) {
 				size_t split_size = (uintptr_t)anode
 				                  - (uintptr_t)node;
-				assert((split_size & AXIOM_LMM_ALIGN_MASK) == 0);
+				assert((split_size & EVI_LMM_ALIGN_MASK) == 0);
 				anode->next = node->next;
 				anode->size = node->size - split_size;
 				node->size = split_size;
@@ -586,13 +586,13 @@ void *axiom_lmm_alloc_gen(axiom_lmm_t *lmm, size_t size,
 			/* Now use the first part of the anode
 			   to satisfy the allocation,
 			   splitting off the tail end if necessary.  */
-			size = ((addr & AXIOM_LMM_ALIGN_MASK) + size + AXIOM_LMM_ALIGN_MASK)
-				& ~AXIOM_LMM_ALIGN_MASK;
+			size = ((addr & EVI_LMM_ALIGN_MASK) + size + EVI_LMM_ALIGN_MASK)
+				& ~EVI_LMM_ALIGN_MASK;
 			if (anode->size > size) {
-				struct axiom_freelist_node *newnode;
+				struct evi_freelist_node *newnode;
 
 				/* Split the node and return its head.  */
-				newnode = (struct axiom_freelist_node*)
+				newnode = (struct evi_freelist_node*)
 						((void*)anode + size);
 				newnode->next = anode->next;
 				newnode->size = anode->size - size;
@@ -632,11 +632,11 @@ void *axiom_lmm_alloc_gen(axiom_lmm_t *lmm, size_t size,
  * \return        Returns a pointer to the allocated memory or NULL
  *                if there is no available memory.
  */
-void *axiom_lmm_alloc_aligned(axiom_lmm_t *lmm, size_t size,
-			      axiom_region_flags_t flags, int align_bits,
+void *evi_lmm_alloc_aligned(evi_lmm_t *lmm, size_t size,
+			      evi_region_flags_t flags, int align_bits,
 			      uintptr_t align_ofs)
 {
-	return axiom_lmm_alloc_gen(lmm, size, flags, align_bits, align_ofs,
+	return evi_lmm_alloc_gen(lmm, size, flags, align_bits, align_ofs,
 				   (uintptr_t)0, (size_t)-1);
 }
 
@@ -645,9 +645,9 @@ void *axiom_lmm_alloc_aligned(axiom_lmm_t *lmm, size_t size,
 
 #ifdef REMOVED_API
 /* REMOVED API */
-int axiom_lmm_add_free(axiom_lmm_t *lmm, void *block, size_t size)
+int evi_lmm_add_free(evi_lmm_t *lmm, void *block, size_t size)
 {
-	struct axiom_region_desc *reg;
+	struct evi_region_desc *reg;
 	uintptr_t min = (uintptr_t) block;
 	uintptr_t max = min + size;
 	int err;
@@ -657,15 +657,15 @@ int axiom_lmm_add_free(axiom_lmm_t *lmm, void *block, size_t size)
 	   because lmm_free() assumes the block was allocated with lmm_alloc()
 	   and thus would be a subset of a larger, already-aligned free block.
 	   Here we can assume no such thing.  */
-	min = (min + AXIOM_LMM_ALIGN_MASK) & ~AXIOM_LMM_ALIGN_MASK;
-	max &= ~AXIOM_LMM_ALIGN_MASK;
+	min = (min + EVI_LMM_ALIGN_MASK) & ~EVI_LMM_ALIGN_MASK;
+	max &= ~EVI_LMM_ALIGN_MASK;
 
 	if (max < min)
-		return AXIOM_LMM_INVALID_BLOCK;
+		return EVI_LMM_INVALID_BLOCK;
 
 	/* If after alignment we have nothing left, we're done.  */
 	if (max == min)
-		return AXIOM_LMM_OK;
+		return EVI_LMM_OK;
 
 	/* Add the block to the free list(s) of whatever region(s) it overlaps.
 	   If some or all of the block doesn't fall into any existing region,
@@ -673,9 +673,9 @@ int axiom_lmm_add_free(axiom_lmm_t *lmm, void *block, size_t size)
 	for (reg = lmm->regions; reg; reg = reg->next)
 	{
 		if (reg->start >= reg->end
-		    || (reg->start & AXIOM_LMM_ALIGN_MASK)
-		    || (reg->end & AXIOM_LMM_ALIGN_MASK))
-			return AXIOM_LMM_INVALID_REGION;
+		    || (reg->start & EVI_LMM_ALIGN_MASK)
+		    || (reg->end & EVI_LMM_ALIGN_MASK))
+			return EVI_LMM_INVALID_REGION;
 
 		if ((max > reg->start) && (min < reg->end))
 		{
@@ -689,23 +689,23 @@ int axiom_lmm_add_free(axiom_lmm_t *lmm, void *block, size_t size)
 				new_max = reg->end;
 
 			if (new_max <= new_min)
-				return AXIOM_LMM_INVALID_REGION;
+				return EVI_LMM_INVALID_REGION;
 
 			/* Add the block.  */
-			err = axiom_lmm_free(lmm, (void*)new_min,
+			err = evi_lmm_free(lmm, (void*)new_min,
 					     new_max - new_min);
 			if (err)
 				return err;
 		}
 	}
 
-	return AXIOM_LMM_OK;
+	return EVI_LMM_OK;
 }
 #endif
 
 /**
  * \brief Adds a memory region to the pool of the passed hanlder.
- *        \see axiom_lmm_add_reg
+ *        \see evi_lmm_add_reg
  *
  * \param lmm     Memory region pool handler
  * \param region  Pointer to a user region memory descriptor
@@ -714,19 +714,19 @@ int axiom_lmm_add_free(axiom_lmm_t *lmm, void *block, size_t size)
  * \param flags   Memory region bitmap flags
  * \param prio    Priority of the memory region inside the memory region pool
  *
- * \return        AXIOM_LMM_OK if the memory region is successfully added,
- *                otherwise an AXIOM_LMM_* error \see axiom_err.h
+ * \return        EVI_LMM_OK if the memory region is successfully added,
+ *                otherwise an EVI_LMM_* error \see evi_err.h
  */
-int axiom_lmm_add_region(axiom_lmm_t *lmm, axiom_region_desc_t *region,
-			  void *addr, size_t size, axiom_region_flags_t flags,
-			  axiom_region_prio_t prio)
+int evi_lmm_add_region(evi_lmm_t *lmm, evi_region_desc_t *region,
+			  void *addr, size_t size, evi_region_flags_t flags,
+			  evi_region_prio_t prio)
 {
 	uintptr_t start = (uintptr_t)addr;
 	uintptr_t end = start + size;
-	struct axiom_region_desc **rp, *r;
+	struct evi_region_desc **rp, *r;
 
-	start = (start + AXIOM_LMM_ALIGN_MASK) & ~AXIOM_LMM_ALIGN_MASK;
-	end &= ~AXIOM_LMM_ALIGN_MASK;
+	start = (start + EVI_LMM_ALIGN_MASK) & ~EVI_LMM_ALIGN_MASK;
+	end &= ~EVI_LMM_ALIGN_MASK;
 
 	DBG("size=%zu\n", size);
 	DBG("start = 0x%"PRIxPTR"\n", start);
@@ -736,7 +736,7 @@ int axiom_lmm_add_region(axiom_lmm_t *lmm, axiom_region_desc_t *region,
 	if (end <= start) {
 		DBG("invalid region 0x%"PRIxPTR" 0x%"PRIxPTR"\n",
 		    start, end);
-		return AXIOM_LMM_INVALID_REGION;
+		return EVI_LMM_INVALID_REGION;
 	}
 
 	region->nodes = NULL;
@@ -750,7 +750,7 @@ int axiom_lmm_add_region(axiom_lmm_t *lmm, axiom_region_desc_t *region,
 
 	if (*rp == region) {
 		DBG("region already in the pool\n");
-		return AXIOM_LMM_OK;
+		return EVI_LMM_OK;
 	}
 
 	for (r = lmm->regions;
@@ -760,7 +760,7 @@ int axiom_lmm_add_region(axiom_lmm_t *lmm, axiom_region_desc_t *region,
 	     rp = &(r->next), r = r->next) {
 		if (r == region) {
 			DBG("region already in the pool\n");
-			return AXIOM_LMM_OK;
+			return EVI_LMM_OK;
 		}
 		/* assert((max <= r->start) || (min >= r->end)); */
 	}
@@ -768,7 +768,7 @@ int axiom_lmm_add_region(axiom_lmm_t *lmm, axiom_region_desc_t *region,
 	*rp = region;
 
 #ifndef REMOVED_API
-	axiom_lmm_free_in_region(region, (void *)region->start,
+	evi_lmm_free_in_region(region, (void *)region->start,
 				 region->end - region->start);
 #endif
 
@@ -777,25 +777,25 @@ int axiom_lmm_add_region(axiom_lmm_t *lmm, axiom_region_desc_t *region,
 	if (rp == &(lmm->regions)) {
 		DBG("Added on TOP\n");
 	} else {
-		struct axiom_region_desc *reg;
+		struct evi_region_desc *reg;
 
-		reg = container_of(rp, struct axiom_region_desc, next);
+		reg = container_of(rp, struct evi_region_desc, next);
 		DBG("Added after %p %p\n", rp, reg);
-		axiom_lmm_merge_region(lmm, reg, region);
+		evi_lmm_merge_region(lmm, reg, region);
 	}
 	if (region->next == NULL) {
 		DBG("Added as LAST element\n");
 	} else {
-		struct axiom_region_desc *reg = region->next;
+		struct evi_region_desc *reg = region->next;
 		DBG("Added before %p\n", reg);
-		axiom_lmm_merge_region(lmm, region, reg);
+		evi_lmm_merge_region(lmm, region, reg);
 	}
 	DBG("+++++++++++++++++++++++++\n");
 
 	DBG("Added prio:%d min:0x%"PRIxPTR" max:0x%"PRIxPTR"\n",
 		region->prio, region->start, region->end);
 
-	return AXIOM_LMM_OK;
+	return EVI_LMM_OK;
 }
 
 /** \} */
