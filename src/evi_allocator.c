@@ -111,13 +111,14 @@ static int rem_region(uintptr_t saddr, uintptr_t eaddr)
 	return err;
 }
 
+static uintptr_t vaddr_start = (uintptr_t)0x4000000000;
+static uintptr_t vaddr_end = (uintptr_t)0x4040000000;
+
 int evi_allocator_init(int app_id, uintptr_t saddr, uintptr_t eaddr,
 		       uintptr_t psaddr, uintptr_t peaddr)
 {
 	int err;
 	struct axiom_mem_dev_info request;
-	uintptr_t vaddr_start = (uintptr_t)0x4000000000;
-	uintptr_t vaddr_end = (uintptr_t)0x4040000000;
 
 #if 0
 	unsigned long *data_start_addr =
@@ -170,12 +171,10 @@ int evi_allocator_init(int app_id, uintptr_t saddr, uintptr_t eaddr,
 		return err;
 	}
 
+	psaddr += vaddr_start;
+	peaddr += vaddr_start;
 	err = add_region(psaddr, peaddr, EVI_PRIVATE_MEM, DEFAULT_PRIO);
 	DBG("add_private_region err = %d\n", err);
-	if (!err) {
-		err = add_region(saddr, eaddr, EVI_SHARE_MEM, DEFAULT_PRIO);
-		DBG("add_shared_region err = %d\n", err);
-	}
 
 	return err;
 }
@@ -280,6 +279,8 @@ int evi_add_shared_region(uintptr_t saddr, size_t len)
 	int err;
 
 	pthread_mutex_lock(&evi_mem_hdlr.mutex);
+	saddr += vaddr_start;
+	eaddr += vaddr_start;
 	err = add_region(saddr, eaddr, EVI_SHARE_MEM, DEFAULT_PRIO);
 	pthread_mutex_unlock(&evi_mem_hdlr.mutex);
 
