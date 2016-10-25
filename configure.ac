@@ -20,6 +20,7 @@ AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_INSTALL
 AC_PROG_LN_S
+AC_PROG_GREP
 
 
 ######################################################################
@@ -57,11 +58,10 @@ AC_ARG_ENABLE([extld],
 	      AS_HELP_STRING([--enable-extld],
 			     [Enable the use of the external Linker Script (only aarch64)]),
 	      [case "${enableval}" in
-	        yes) AXIOM_LD_SCRIPTS="xs_map64.lds"; use_extld=yes ;;
+	        yes) AXIOM_LD_SCRIPTS="src/xs_map64.lds"; use_extld=yes ;;
 	        no) use_extld=no ;;
 	        *) AC_MSG_ERROR([bad value ${enableval} for --enable-extld]) ;;
 	       esac], [use_extld=no])
-AC_SUBST([AXIOM_LD_SCRIPTS])
 AM_CONDITIONAL([EXTLD], [test x"$use_extld" = "xyes"])
 
 AC_ARG_ENABLE([debug],
@@ -84,5 +84,15 @@ AC_TYPE_UINT32_T
 # Checks for library functions.
 AC_FUNC_MALLOC
 
-AC_CONFIG_FILES([Makefile src/Makefile test/Makefile docs/doxygen.cfg])
+if test x"$use_extld" = "xyes"; then
+LINKER_SEARCH_PATH_BLOCK=$($CC -Wl,--verbose 2>&1 | $GREP "SEARCH_DIR")
+AC_SUBST([AXIOM_LD_SCRIPTS])
+AC_SUBST(LINKER_SEARCH_PATH_BLOCK)
+fi
+
+AC_CONFIG_FILES([Makefile
+		 $AXIOM_LD_SCRIPTS
+		 src/Makefile
+		 test/Makefile
+		 docs/doxygen.cfg])
 AC_OUTPUT
