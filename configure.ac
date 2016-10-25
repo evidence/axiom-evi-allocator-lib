@@ -52,6 +52,27 @@ AC_ARG_WITH([axiom-mem-dev],
 )
 AC_SUBST([AXIOM_MEM_DEV_INC])
 
+AXIOM_LD_SCRIPTS=""
+AC_ARG_ENABLE([extld],
+	      AS_HELP_STRING([--enable-extld],
+			     [Enable the use of the external Linker Script (only aarch64)]),
+	      [case "${enableval}" in
+	        yes) AXIOM_LD_SCRIPTS="xs_map64.lds"; use_extld=yes ;;
+	        no) use_extld=no ;;
+	        *) AC_MSG_ERROR([bad value ${enableval} for --enable-extld]) ;;
+	       esac], [use_extld=no])
+AC_SUBST([AXIOM_LD_SCRIPTS])
+AM_CONDITIONAL([EXTLD], [test x"$use_extld" = "xyes"])
+
+AC_ARG_ENABLE([debug],
+	      AS_HELP_STRING([--enable-debug],
+			     [build library with debugging symbols]),
+	      [case "${enableval}" in
+	        yes) dbg=yes ;;
+	        no) dbg=no ;;
+	        *) AC_MSG_ERROR([bad value ${enableval} for --enable-debug]) ;;
+	       esac], [dbg=no])
+AM_CONDITIONAL([DBG], [test x"$dbg" = "xyes"])
 
 # Checks for header files.
 AC_CHECK_HEADERS([stddef.h stdint.h])

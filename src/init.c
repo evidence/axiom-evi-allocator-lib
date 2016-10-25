@@ -16,8 +16,9 @@
 /**
  * \cond INTERNAL_MACRO
  */
-#define DEBUG
+/*
 #define DEBUG_NO_TIME
+*/
 /**
  * \endcond
  */

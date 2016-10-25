@@ -4,8 +4,6 @@
 #include <stdio.h>
 
 #include <freeidx_list.h>
-
-#define DEBUG
 #include <debug.h>
 
 int freeidx_list_init(freeidx_list_t *fl, int *idx_vec, int n_elem)

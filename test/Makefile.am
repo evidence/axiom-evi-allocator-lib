@@ -1,5 +1,9 @@
 AM_CPPFLAGS = -I$(top_srcdir)/src/
 
+if EXTLD
+AM_LDFLAGS = -Wl,-T$(top_srcdir)/src/@AXIOM_LD_SCRIPTS@
+endif
+
 bin_PROGRAMS = a64allocator
 noinst_PROGRAMS = testA testB testFreelist
 

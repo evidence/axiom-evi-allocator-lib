@@ -26,8 +26,7 @@
 /**
  * \cond INTERNAL_MACRO
  */
-#undef DEBUG
-#define DEBUG
+
 /**
  * \endcond
  */
