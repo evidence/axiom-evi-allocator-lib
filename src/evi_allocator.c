@@ -86,35 +86,6 @@ static int add_region(uintptr_t saddr, uintptr_t eaddr,
 	return err;
 }
 
-/* Dangerous do not use*/
-static int rem_region(uintptr_t saddr, uintptr_t eaddr)
-{
-	struct axiom_mem_dev_info request;
-	int err;
-	int fd = evi_mem_hdlr.mem_dev_fd;
-	void *mem = (void *)saddr;
-
-	DBG("Request region [0x%"PRIxPTR"] [0x%"PRIxPTR"]\n", saddr, eaddr);
-	request.base = saddr;
-	request.size = eaddr - saddr;
-	DBG("Request region b:%ld s:%ld\n", request.base, request.size);
-
-	/*TODO: remove region inside lmm */
-	err = ioctl(fd, AXIOM_MEM_DEV_REVOKE_MEM, &request);
-	if (err != 0) {
-		perror("ioctl");
-		return err;
-	}
-
-	err = mprotect(mem, request.size, PROT_NONE);
-	if (err) {
-		perror("mprotect");
-		return err;
-	}
-
-	return err;
-}
-
 int evi_allocator_init(int app_id, uintptr_t saddr, uintptr_t eaddr,
 		       uintptr_t psaddr, uintptr_t peaddr)
 {
@@ -182,65 +153,6 @@ int evi_allocator_init(int app_id, uintptr_t saddr, uintptr_t eaddr,
 
 	return err;
 }
-
-#if 0
-static void *evi_request_private_region(unsigned long size)
-{
-	struct axiom_mem_dev_info request;
-	unsigned long start_addr = (unsigned long)(evi_mem_hdlr.vaddr_start);
-	void *mem;
-	int err;
-	int fd = evi_mem_hdlr.mem_dev_fd;
-
-	request.size = size;
-
-	err = ioctl(fd, AXIOM_MEM_DEV_PRIVATE_ALLOC, &request);
-	if (err) {
-		perror("ioctl");
-		return NULL;
-	}
-
-	DBG("request B:0x%lx S:%ld\n", request.base, request.size);
-
-	mem = (void *)(start_addr + request.base);
-	DBG("protect B:%p S:%ld\n", mem, request.size);
-	if (mprotect(mem, request.size, PROT_WRITE | PROT_READ)) {
-		perror("mprotect");
-		return NULL;
-	}
-
-	return mem;
-}
-#endif
-
-#if 0
-static void *private_alloc_with_region(size_t nsize)
-{
-	size_t bs;
-	void *addr;
-	void *ptr = NULL;
-	int err;
-
-	bs = ((nsize + BLOCK_REQ_SIZE - 1) / BLOCK_REQ_SIZE)
-	     * BLOCK_REQ_SIZE;
-	DBG("Request region of size: %zu\n", bs);
-	addr = evi_request_private_region(bs);
-	DBG("private region address: %p\n", addr);
-
-	if (addr == NULL)
-		return ptr;
-
-	err = evi_lmm_add_reg(&evi_mem_hdlr.almm, addr, bs,
-				EVI_PRIVATE_MEM, DEFAULT_PRIO);
-	if (err != EVI_LMM_OK)
-		return ptr;
-
-	ptr = evi_lmm_alloc(&evi_mem_hdlr.almm, nsize,
-			    EVI_PRIVATE_MEM);
-
-	return ptr;
-}
-#endif
 
 void *evi_private_malloc(size_t sz)
 {
