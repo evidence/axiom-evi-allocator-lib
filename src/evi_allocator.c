@@ -257,19 +257,6 @@ void *evi_private_malloc(size_t sz)
 	return ptr;
 }
 
-#if 0
-static void *request_shared_memory(size_t sz)
-{
-	void *ptr;
-
-	/* TODO: to ask shared block to the server */
-	/* TODO: probably better in the glue code ?!?! */
-	ptr = evi_lmm_alloc(&evi_mem_hdlr.almm, sz, EVI_SHARE_MEM);
-
-	return ptr;
-}
-#endif
-
 void *evi_shared_malloc(size_t sz)
 {
 	void *ptr;
@@ -277,15 +264,11 @@ void *evi_shared_malloc(size_t sz)
 
 	pthread_mutex_lock(&evi_mem_hdlr.mutex);
 	ptr = evi_lmm_alloc(&evi_mem_hdlr.almm, nsize, EVI_SHARE_MEM);
-#if 0
-	if (ptr == NULL)
-		ptr = request_shared_memory(nsize);
-
 	if (ptr != NULL) {
 		*((size_t *) ptr) = nsize;
 		ptr = (void *)((uintptr_t)ptr + sizeof(size_t));
 	}
-#endif
+
 	pthread_mutex_unlock(&evi_mem_hdlr.mutex);
 
 	return ptr;
