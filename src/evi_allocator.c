@@ -50,9 +50,14 @@ static struct evi_allocator_s {
 	evi_lmm_t almm;
 } evi_mem_hdlr = { PTHREAD_MUTEX_INITIALIZER, };
 
-#if 0
+#ifdef USE_EXT_LDSCRIPT
 extern unsigned long __ld_shm_info_start_addr;
 extern unsigned long __ld_shm_info_end_addr;
+static uintptr_t vaddr_start;
+static uintptr_t vaddr_end;
+#else
+static uintptr_t vaddr_start = (uintptr_t)0x4000000000;
+static uintptr_t vaddr_end = (uintptr_t)0x4040000000;
 #endif
 
 static int add_region(uintptr_t saddr, uintptr_t eaddr,
@@ -110,22 +115,19 @@ static int rem_region(uintptr_t saddr, uintptr_t eaddr)
 	return err;
 }
 
-static uintptr_t vaddr_start = (uintptr_t)0x4000000000;
-static uintptr_t vaddr_end = (uintptr_t)0x4040000000;
-
 int evi_allocator_init(int app_id, uintptr_t saddr, uintptr_t eaddr,
 		       uintptr_t psaddr, uintptr_t peaddr)
 {
 	int err;
 	struct axiom_mem_dev_info request;
+	size_t size;
 
-#if 0
-	unsigned long *data_start_addr =
-				     (unsigned long *)&__ld_shm_info_start_addr;
-	unsigned long *data_end_addr = (unsigned long *)&__ld_shm_info_end_addr;
-	size_t size = *data_end_addr - *data_start_addr;
+#ifdef USE_EXT_LDSCRIPT
+	vaddr_start = (uintptr_t)__ld_shm_info_start_addr;
+	vaddr_end = (uintptr_t)__ld_shm_info_end_addr;
 #endif
-	size_t size = vaddr_end - vaddr_start;
+
+	size = vaddr_end - vaddr_start;
 
 	if (app_id < 0) {
 		DBG("Invalid AXIOM_APP_ID\n");
@@ -150,11 +152,14 @@ int evi_allocator_init(int app_id, uintptr_t saddr, uintptr_t eaddr,
 
 	request.base = vaddr_start;
 	request.size = vaddr_end - vaddr_start;
-#if 0
+#ifdef USE_EXT_LDSCRIPT
 	/* TODO: re-enable when using new linker script */
+	DBG("vaddr_start = 0x%"PRIxPTR"\n", vaddr_start);
 	err = mprotect((void *)(vaddr_start), size, PROT_NONE);
-	if (err)
+	if (err) {
+		perror("mprotect");
 		return err;
+	}
 #endif
 	err = ioctl(evi_mem_hdlr.mem_dev_fd, AXIOM_MEM_DEV_CONFIG_VMEM,
 		    &request);
