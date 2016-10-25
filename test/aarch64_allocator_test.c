@@ -4,11 +4,7 @@
 #include <stdlib.h>
 
 #include <evi_lmm.h>
-
-
 #include <evi_allocator.h>
-
-
 #include <inttypes.h>
 
 void hit_enter_string(char *s)
@@ -37,8 +33,6 @@ int main()
 {
 #define ALLOC_TST_N  10
 #define ALLOC_TST_SZ (120 * 1024 * 1024)
-	uintptr_t vaddr_start = (uintptr_t)0x4000000000;
-	uintptr_t vaddr_end = (uintptr_t)0x4040000000;
 	void *p;
 	void *tst[ALLOC_TST_N];
 	void *allp;
@@ -47,6 +41,10 @@ int main()
 	size_t want_size = 0;
 	int err;
 	int app_id;
+	uintptr_t sh_start, sh_end;
+
+	sh_start = 0x0000000000;
+	sh_end = sh_start + MB_1;
 
 	app_id = get_app_id();
 	if (app_id < 0) {
@@ -57,9 +55,9 @@ int main()
 	hit_enter_string("Before evi_allocator_init");
 
 	err = evi_allocator_init(app_id,
-				 vaddr_start, vaddr_end,
-				 vaddr_start + app_id * MB_1,
-				 vaddr_start + (app_id + 1) * MB_1);
+				 sh_start, sh_end,
+				 sh_end + app_id * MB_1,
+				 sh_end + (app_id + 1) * MB_1);
 	if (err) {
 		printf("Error in evi_allocator_init\n");
 		exit(EXIT_FAILURE);
@@ -100,7 +98,7 @@ int main()
 
 	evi_private_free(allp);
 	{
-		size_t ss = vaddr_end - vaddr_start - 2 * 4096;
+		size_t ss = 2 * 4096;
 		allp = evi_private_malloc(ss);
 		printf("start memset\n");
 		if (allp)
