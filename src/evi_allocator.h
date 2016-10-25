@@ -9,6 +9,7 @@
 /**
  * \brief Initialize the allocator
  *
+ * \param app_id application id
  * \param saddr virtual address start of the allocator
  * \param eaddr virtual address end of the allocator
  * \param psaddr virtual address start of the private memory
@@ -16,8 +17,8 @@
  *
  * \return Return the error code of operation. (0 if everything is OK)
  */
-int evi_allocator_init(uintptr_t saddr, uintptr_t eaddr,
-			 uintptr_t psaddr, uintptr_t peaddr);
+int evi_allocator_init(int app_id, uintptr_t saddr, uintptr_t eaddr,
+		       uintptr_t psaddr, uintptr_t peaddr);
 
 /**
  * \brief Allocate memory of sz bytes int the private region

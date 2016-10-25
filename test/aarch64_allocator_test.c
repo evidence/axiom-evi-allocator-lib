@@ -56,7 +56,8 @@ int main()
 
 	hit_enter_string("Before evi_allocator_init");
 
-	err = evi_allocator_init(vaddr_start, vaddr_end,
+	err = evi_allocator_init(app_id,
+				 vaddr_start, vaddr_end,
 				 vaddr_start + app_id * MB_1,
 				 vaddr_start + (app_id + 1) * MB_1);
 	if (err) {

@@ -111,26 +111,11 @@ static int rem_region(uintptr_t saddr, uintptr_t eaddr)
 	return err;
 }
 
-static int get_app_id(void)
-{
-	int app_id;
-	char *app_id_str;
-
-	app_id_str = getenv("AXIOM_APP_ID");
-	if (app_id_str == NULL)
-		return -1;
-
-	app_id = atoi(app_id_str);
-
-	return ((app_id < 0) ? -1 : app_id);
-}
-
-int evi_allocator_init(uintptr_t saddr, uintptr_t eaddr,
+int evi_allocator_init(int app_id, uintptr_t saddr, uintptr_t eaddr,
 		       uintptr_t psaddr, uintptr_t peaddr)
 {
 	int err;
 	struct axiom_mem_dev_info request;
-	int app_id;
 	uintptr_t vaddr_start = (uintptr_t)0x4000000000;
 	uintptr_t vaddr_end = (uintptr_t)0x4040000000;
 
@@ -142,15 +127,14 @@ int evi_allocator_init(uintptr_t saddr, uintptr_t eaddr,
 #endif
 	size_t size = vaddr_end - vaddr_start;
 
-	err = evi_lmm_init(&evi_mem_hdlr.almm);
-	DBG("evi_lmm_init returns %d\n", err);
-	assert(err == EVI_LMM_OK);
-
-	app_id = get_app_id();
 	if (app_id < 0) {
 		DBG("Invalid AXIOM_APP_ID\n");
 		return -1;
 	}
+
+	err = evi_lmm_init(&evi_mem_hdlr.almm);
+	DBG("evi_lmm_init returns %d\n", err);
+	assert(err == EVI_LMM_OK);
 
 	err = open("/dev/axiom_dev_mem0", O_RDWR);
 	DBG("open /dev/axiom_dev_mem0 returns %d\n", err);
