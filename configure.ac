@@ -100,7 +100,7 @@ fi
 AC_CONFIG_FILES([Makefile
 		 ldscript/Makefile
 		 ldscript/aarch64/Makefile
-		 $AXIOM_LD_SCRIPTS_MAKE
+		 $AXIOM_LD_SCRIPTS_PATH
 		 src/Makefile
 		 test/Makefile
 		 docs/doxygen.cfg])
