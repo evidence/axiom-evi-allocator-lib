@@ -89,18 +89,18 @@ AXIOM_LD_SCRIPTS_MAKE=""
 AXIOM_LD_SCRIPTS_MAKE_ARCH=""
 if test x"$use_extld" = "xyes"; then
 LINKER_SEARCH_PATH_BLOCK=$($CC -Wl,--verbose 2>&1 | $GREP "SEARCH_DIR")
-AXIOM_LD_SCRIPTS_PATH=ldscript/aarch64/$AXIOM_LD_SCRIPTS
-AXIOM_LD_SCRIPTS_MAKE=ldscript/Makefile
-AXIOM_LD_SCRIPTS_MAKE_ARCH=ldscript/aarch64/Makefile
+AXIOM_LD_SCRIPTS_PATH="ldscript/aarch64/$AXIOM_LD_SCRIPTS"
+AXIOM_LD_SCRIPTS_MAKE="ldscript/Makefile"
+AXIOM_LD_SCRIPTS_MAKE_ARCH="ldscript/aarch64/Makefile"
 AC_SUBST([AXIOM_LD_SCRIPTS])
 AC_SUBST([LINKER_SEARCH_PATH_BLOCK])
 AC_SUBST([AXIOM_LD_SCRIPTS_PATH])
 fi
 
 AC_CONFIG_FILES([Makefile
+		 ldscript/Makefile
+		 ldscript/aarch64/Makefile
 		 $AXIOM_LD_SCRIPTS_MAKE
-		 $AXIOM_LD_SCRIPTS_MAKE_ARCH
-		 $AXIOM_LD_SCRIPTS_PATH
 		 src/Makefile
 		 test/Makefile
 		 docs/doxygen.cfg])
