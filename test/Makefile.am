@@ -1,7 +1,7 @@
 AM_CPPFLAGS = -I$(top_srcdir)/src/
 
 if EXTLD
-AM_LDFLAGS = -Wl,-T$(top_srcdir)/@AXIOM_LD_SCRIPTS@
+AM_LDFLAGS = -Wl,-T$(top_srcdir)/@AXIOM_LD_SCRIPTS_PATH@
 endif
 
 bin_PROGRAMS = a64allocator
