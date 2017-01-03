@@ -59,6 +59,7 @@ libtool
 ltmain.sh
 missing
 stamp-h1
+evi_lmm.pc
 
 *.lo
 *.la

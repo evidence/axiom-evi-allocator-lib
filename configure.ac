@@ -87,6 +87,7 @@ fi
 AC_CONFIG_FILES([Makefile
 		 ldscript/Makefile
 		 ldscript/aarch64/Makefile
+		 evi_lmm.pc
 		 $AXIOM_LD_SCRIPTS_PATH
 		 src/Makefile
 		 test/Makefile
