@@ -1,5 +1,20 @@
+/*!
+ * \file freeidx_list.h
+ *
+ * \version     v0.10
+ * \date        2016-09-23
+ *
+ * Copyright (C) 2016, Evidence Srl.
+ * Terms of use are as specified in COPYING
+ */
 #ifndef FREELIST_H
 #define FREELIST_H
+
+/**
+ * \addtogroup EVI_LMM
+ *
+ * \{
+ */
 
 #define FREELIST_OK             0
 #define FREELIST_INVALID_IDX   -1
@@ -24,5 +39,7 @@ int freeidx_list_free_idx(freeidx_list_t *fl, int idx);
 int freeidx_list_elem_for_memblock(size_t mem_size, size_t elem_size);
 
 #define FREELIST_SPACE(n_elem) (sizeof(freeidx_list_t) + n_elem * sizeof(int))
+
+/** \} */
 
 #endif /* FREELIST_H */

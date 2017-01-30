@@ -1,5 +1,38 @@
+/*!
+ * \file evi_lmm.h
+ *
+ * \version     v0.10
+ * \date        2016-09-23
+ *
+ * Copyright (C) 2016, Evidence Srl.
+ * Terms of use are as specified in COPYING
+ */
+
+/*
+ * Copyright (c) 1995, 1998 University of Utah and the Flux Group.
+ * All rights reserved.
+ *
+ * This file is part of the Flux OSKit.  The OSKit is free software, also known
+ * as "open source;" you can redistribute it and/or modify it under the terms
+ * of the GNU General Public License (GPL), version 2, as published by the Free
+ * Software Foundation (FSF).  To explore alternate licensing terms, contact
+ * the University of Utah at csl-dist@cs.utah.edu or +1-801-585-3271.
+ *
+ * The OSKit is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GPL for more details.  You should have
+ * received a copy of the GPL along with the OSKit; see the file COPYING.  If
+ * not, write to the FSF, 59 Temple Place #330, Boston, MA 02111-1307, USA.
+ */
+
 #ifndef EVI_LMM_H
 #define EVI_LMM_H
+
+/**
+ * \addtogroup EVI_LMM
+ *
+ * \{
+ */
 
 #include <stdint.h>
 #include <stddef.h>
@@ -77,5 +110,7 @@ int evi_lmm_add_reg(evi_lmm_t *lmm, void *addr, size_t size,
 /*REMOVED API*/
 int evi_lmm_add_free(evi_lmm_t *lmm, void *block, size_t size);
 #endif
+
+/** \} */
 
 #endif /* EVI_LMM_H */

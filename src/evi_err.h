@@ -1,3 +1,12 @@
+/*!
+ * \file evi_err.h
+ *
+ * \version     v0.10
+ * \date        2016-09-23
+ *
+ * Copyright (C) 2016, Evidence Srl.
+ * Terms of use are as specified in COPYING
+ */
 #ifndef EVI_ERR_H
 #define EVI_ERR_H
 
@@ -16,4 +25,5 @@
 #define EVI_LMM_INVALID_SIZE     -103
 
 /** \} */
+
 #endif /* EVI_ERR_H */
