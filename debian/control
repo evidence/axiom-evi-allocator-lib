@@ -1,0 +1,20 @@
+Source: axiom-evi-allocator-lib
+Section: unknown
+Priority: optional
+Maintainer: Massimiliano <massy@unknown>
+Build-Depends: debhelper (>= 9)
+Standards-Version: 3.9.5
+Homepage: <insert the upstream URL, if relevant>
+Vcs-Git: git://anonscm.debian.org/collab-maint/axiom-apps.git
+
+Package: libevi-lmm
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Evidence Logical Memory Manager for Axiom 
+ Evidence Logical Memory Manager for Axiom
+
+Package: libevi-lmm-dev
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Evidence Logical Memory Manager for Axiom - development files
+ Evidence Logical Memory Manager for Axiom
