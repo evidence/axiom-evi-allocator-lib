@@ -1,7 +1,7 @@
 /*!
  * \file evi_lmm.h
  *
- * \version     v0.12
+ * \version     v0.13
  * \date        2016-09-23
  *
  * Copyright (C) 2016, Evidence Srl.
