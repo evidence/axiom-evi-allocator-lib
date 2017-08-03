@@ -51,6 +51,16 @@ AC_ARG_ENABLE([extld],
 	       esac], [use_extld=no])
 AM_CONDITIONAL([EXTLD], [test x"$use_extld" = "xyes"])
 
+AC_ARG_ENABLE([extld_x86],
+	      AS_HELP_STRING([--enable-extld_x86],
+			     [Enable the use of the external Linker Script (only X86)]),
+	      [case "${enableval}" in
+	        yes) AXIOM_LD_SCRIPTS="xs_map64.lds"; use_extld_x86=yes ;;
+	        no) use_extld_x86=no ;;
+	        *) AC_MSG_ERROR([bad value ${enableval} for --enable-extld_x86]) ;;
+	       esac], [use_extld_x86=no])
+AM_CONDITIONAL([EXTLD_X86], [test x"$use_extld_x86" = "xyes"])
+
 AC_ARG_ENABLE([debug],
 	      AS_HELP_STRING([--enable-debug],
 			     [build library with debugging symbols]),
@@ -83,10 +93,20 @@ AC_SUBST([AXIOM_LD_SCRIPTS])
 AC_SUBST([LINKER_SEARCH_PATH_BLOCK])
 AC_SUBST([AXIOM_LD_SCRIPTS_PATH])
 fi
+if test x"$use_extld_x86" = "xyes"; then
+LINKER_SEARCH_PATH_BLOCK=$($CC -Wl,--verbose 2>&1 | $GREP "SEARCH_DIR")
+AXIOM_LD_SCRIPTS_PATH="ldscript/x86/$AXIOM_LD_SCRIPTS"
+AXIOM_LD_SCRIPTS_MAKE="ldscript/Makefile"
+AXIOM_LD_SCRIPTS_MAKE_ARCH="ldscript/x86/Makefile"
+AC_SUBST([AXIOM_LD_SCRIPTS])
+AC_SUBST([LINKER_SEARCH_PATH_BLOCK])
+AC_SUBST([AXIOM_LD_SCRIPTS_PATH])
+fi
 
 AC_CONFIG_FILES([Makefile
 		 ldscript/Makefile
 		 ldscript/aarch64/Makefile
+		 ldscript/x86/Makefile
 		 evi_lmm.pc
 		 $AXIOM_LD_SCRIPTS_PATH
 		 src/Makefile
