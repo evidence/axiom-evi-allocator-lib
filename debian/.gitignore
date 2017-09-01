@@ -8,4 +8,7 @@ libevi-lmm.postinst.debhelper
 libevi-lmm.postrm.debhelper
 libevi-lmm.substvars
 libevi-lmm
+libevi-lmm-dbg.debhelper.log
+libevi-lmm-dbg.substvars
+libevi-lmm-dbg
 tmp

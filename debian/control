@@ -13,6 +13,12 @@ Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Evidence Logical Memory Manager for Axiom 
  Evidence Logical Memory Manager for Axiom
 
+Package: libevi-lmm-dbg
+Architecture: any
+Depends: libevi-lmm (= ${binary:Version}), ${misc:Depends}
+Description: Evidence Logical Memory Manager for Axiom 
+ Evidence Logical Memory Manager for Axiom
+
 Package: libevi-lmm-dev
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
