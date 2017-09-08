@@ -2,16 +2,6 @@
 
 DEBIAN_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
-#DEB_TARGET_ARCH=arm64
-#DEB_TARGET_ARCH_BITS=64
-#DEB_TARGET_ARCH_CPU=arm64
-#DEB_TARGET_ARCH_ENDIAN=little
-#DEB_TARGET_ARCH_OS=linux
-#DEB_TARGET_GNU_CPU=aarch64
-#DEB_TARGET_GNU_SYSTEM=linux-gnu
-#DEB_TARGET_GNU_TYPE=aarch64-linux-gnu
-#DEB_TARGET_MULTIARCH=aarch64-linux-gnu
-
 .PHONY: build build-arch build-indep binary binary-arch binary-indep clean
 
 build: build-arch build-indep
@@ -24,12 +14,20 @@ build-indep:
 
 binary: binary-arch binary-indep
 
-binary-arch: make-changelog
+binary-arch: make-changelog init-install
 	dh_testroot
 	dh_prep
 	dh_installdirs
 
+ifeq ($(FS),x86)
+	$(MAKE) DESTDIR=$(DEBIAN_DIR)/tmp install
+# hack (not installing linkerscript!)
+	-mkdir $(DEBIAN_DIR)/tmp/usr/local/axiom-evi-allocator-lib
+	-ln -sf local/axiom-evi-allocator-lib $(DEBIAN_DIR)/tmp/usr/axiom-evi-allocator-lib
+	-cp ldscript/x86/xs_map64.lds $(DEBIAN_DIR)/tmp/usr/local/axiom-evi-allocator-lib/
+else
 	PATH=$(PATH):$(LINARO)/host/usr/bin make P=1 DESTDIR=$(DEBIAN_DIR)/tmp install
+endif
 
 	dh_install --list-missing
 	dh_installdocs
@@ -60,7 +58,7 @@ binary-arch: make-changelog
 	dh_gconf
 	dh_icons
 	dh_perl
-	dh_usrlocal
+#	dh_usrlocal
 
 	dh_link
 	dh_installxfonts
@@ -81,6 +79,20 @@ clean: clean-changelog
 	dh_testdir
 	make clean
 	dh_clean
+
+#
+# init-install
+#
+
+init-install:
+ifeq ($(FS),x86)
+	ln -sf $(DEBIAN_DIR)/libevi-lmm.install.x86 $(DEBIAN_DIR)/libevi-lmm.install
+	ln -sf $(DEBIAN_DIR)/libevi-lmm-dev.install.x86 $(DEBIAN_DIR)/libevi-lmm-dev.install
+else
+	ln -sf $(DEBIAN_DIR)/libevi-lmm.install.other $(DEBIAN_DIR)/libevi-lmm.install
+	ln -sf $(DEBIAN_DIR)/libevi-lmm-dev.install.other $(DEBIAN_DIR)/libevi-lmm-dev.install
+endif
+
 
 #
 # changelog

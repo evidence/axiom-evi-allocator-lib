@@ -12,3 +12,7 @@ libevi-lmm-dbg.debhelper.log
 libevi-lmm-dbg.substvars
 libevi-lmm-dbg
 tmp
+libevi-lmm-dev.install
+libevi-lmm.install
+libevi-lmm-dbgsym.debhelper.log
+libevi-lmm-dbgsym.substvars

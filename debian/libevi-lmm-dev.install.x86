@@ -1,0 +1,4 @@
+/usr/axiom-evi-allocator-lib/*
+/usr/local/include/*
+/usr/local/lib/pkgconfig/*
+/usr/local/lib/libevi_lmm.la
