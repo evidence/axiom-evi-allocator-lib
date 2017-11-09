@@ -1,7 +1,7 @@
 /*!
  * \file freeidx_list.h
  *
- * \version     v0.14
+ * \version     v0.15
  * \date        2016-09-23
  *
  * Copyright (C) 2016, Evidence Srl.
