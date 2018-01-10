@@ -2,6 +2,10 @@
 
 DEBIAN_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
+ifndef LINARO
+$(warning LINARO environment variable not found)
+endif
+
 .PHONY: build build-arch build-indep binary binary-arch binary-indep clean
 
 build: build-arch build-indep
@@ -19,7 +23,7 @@ binary-arch: make-changelog init-install
 	dh_prep
 	dh_installdirs
 
-ifeq ($(FS),x86)
+ifeq ($(MODE),x86)
 	$(MAKE) DESTDIR=$(DEBIAN_DIR)/tmp install
 # hack (not installing linkerscript!)
 	-mkdir $(DEBIAN_DIR)/tmp/usr/local/axiom-evi-allocator-lib
@@ -77,7 +81,7 @@ binary-indep:
 
 clean: clean-changelog
 	dh_testdir
-	test -e Makefile && make clean || true
+#	test -e Makefile && make clean || true
 	dh_clean
 
 #
